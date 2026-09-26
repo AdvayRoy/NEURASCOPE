@@ -14,7 +14,7 @@ export function NetworkLegend() {
   if (!run || mode === "neural") return null;
   const fr = run.fractures.find((f) => f.id === fractureId);
   return (
-    <div className="pointer-events-auto w-[196px] shrink-0">
+    <div className="glass pointer-events-auto w-[204px] shrink-0 rounded-lg px-2 py-1.5">
       <div className="label mb-2 flex items-center justify-between">
         <span>Functional networks</span>
         <Tier tier="literature" sources={["yeo2011", "corbetta2002"]} context="Network overlays (parcel-level grouping)" />
