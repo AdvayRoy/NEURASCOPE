@@ -6,6 +6,15 @@ import { COHORTS } from "@/lib/cortex/params";
 import { simulatePatch } from "@/lib/state/pipeline";
 import { useLab } from "@/lib/state/store";
 
+let llmAvailable: Promise<boolean> | null = null;
+function analystLlmAvailable() {
+  llmAvailable ??= fetch("/api/status")
+    .then((r) => r.json() as Promise<{ analystLlm: string | null }>)
+    .then((j) => Boolean(j.analystLlm))
+    .catch(() => false);
+  return llmAvailable;
+}
+
 function runAction(a: AnalystAction) {
   const s = useLab.getState();
   if (a.kind === "select-fracture") s.selectFracture(a.id);
@@ -40,6 +49,7 @@ export function AskBar() {
     const det = deterministicAnswer(question, s.run, { fractureId: s.fractureId, cohort: s.cohort, time: s.time, counterfactuals: s.counterfactuals });
     let ans = det;
     try {
+      if (!(await analystLlmAvailable())) throw new Error("analyst LLM not configured");
       const r = await fetch("/api/analyst", {
         method: "POST",
         headers: { "content-type": "application/json" },

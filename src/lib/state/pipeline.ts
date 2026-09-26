@@ -3,6 +3,7 @@ import { cortexClient } from "../cortex/client";
 import { extractSignals } from "../media/extract";
 import { localOnlyOntology } from "../oriane/normalize";
 import type { VideoOntology } from "../ontology";
+import { saveContext, saveRun } from "./persist";
 import { useLab, type PipelineStep } from "./store";
 
 export interface RunInput {
@@ -76,6 +77,7 @@ export async function runPipeline(input: RunInput) {
     step("evidence", "done", `${run.fractures.length} fracture${run.fractures.length === 1 ? "" : "s"} with mechanisms`);
     await new Promise((r) => setTimeout(r, 350));
     useLab.getState().set({ phase: "workspace", ontology, run, mediaUrl, time: 0 });
+    void saveRun(input, useLab.getState().context);
   } catch (e) {
     const cur = useLab.getState().steps.find((s) => s.status === "active");
     if (cur) step(cur.id, "error");
@@ -88,6 +90,7 @@ export async function rerunContext() {
   if (!ontology) return;
   const run = await cortexClient.run(ontology, { context });
   set({ run, counterfactuals: {}, activeCf: null, fractureId: null });
+  saveContext(context);
 }
 
 export async function simulatePatch(interventionId: string) {

@@ -168,7 +168,7 @@ function CameraRig({ centroids }: { centroids: Partial<Record<NetworkId, THREE.V
     target.current.copy(w).multiplyScalar(0.35);
     const dir = w.clone().setY(w.y * 0.6).normalize();
     if (dir.lengthSq() < 0.01) dir.set(0, 0, 1);
-    desired.current = dir.multiplyScalar(3.1).add(new THREE.Vector3(0, 0.35, 0));
+    desired.current = dir.multiplyScalar(4.0).add(new THREE.Vector3(0, 0.35, 0));
   }, [network, fractureId, run, centroids]);
 
   useFrame((_, dt) => {
@@ -191,7 +191,7 @@ function CameraRig({ centroids }: { centroids: Partial<Record<NetworkId, THREE.V
       ref={controls}
       enablePan={false}
       minDistance={2.1}
-      maxDistance={5.2}
+      maxDistance={6}
       autoRotateSpeed={0.25}
       enableDamping
       dampingFactor={0.08}
@@ -209,7 +209,7 @@ export function BrainCanvas({ interactive = true, showAudience = true }: { inter
   return (
     <Canvas
       dpr={[1, 2]}
-      camera={{ position: [0.9, 0.55, 3.3], fov: 32, near: 0.1, far: 50 }}
+      camera={{ position: [1.15, 0.7, 4.3], fov: 32, near: 0.1, far: 50 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; }}
     >

@@ -1,6 +1,9 @@
 "use client";
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { loadRun } from "@/lib/state/persist";
+import { runPipeline } from "@/lib/state/pipeline";
 import { useLab } from "@/lib/state/store";
 import { InputScreen } from "./InputScreen";
 import { LoadingScreen } from "./LoadingScreen";
@@ -9,6 +12,15 @@ const Workspace = dynamic(() => import("./Workspace").then((m) => m.Workspace), 
 
 export function Lab() {
   const phase = useLab((s) => s.phase);
+  useEffect(() => {
+    let live = true;
+    void loadRun().then((r) => {
+      if (!live || !r || useLab.getState().phase !== "input") return;
+      useLab.getState().set({ context: r.saved.context });
+      void runPipeline({ url: r.saved.url, fixture: r.saved.fixture, file: r.file });
+    });
+    return () => { live = false; };
+  }, []);
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-ink">
       <AnimatePresence mode="wait">

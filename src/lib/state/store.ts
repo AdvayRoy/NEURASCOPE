@@ -4,6 +4,7 @@ import type { Counterfactual, CortexRun } from "../cortex";
 import type { AudienceContextId } from "../cortex/params";
 import type { NetworkId } from "../cortex/networks";
 import type { VideoOntology } from "../ontology";
+import { clearRun } from "./persist";
 
 export type Phase = "input" | "loading" | "workspace";
 export type BrainMode = "cortex" | "networks" | "neural";
@@ -84,7 +85,12 @@ export const useLab = create<State>((set, get) => ({
   },
   reset: () => {
     const url = get().mediaUrl;
-    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
-    set({ ...initial });
+    clearRun();
+    set({ phase: "input", playing: false, error: null });
+    setTimeout(() => {
+      if (get().phase !== "input") return;
+      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+      set({ ...initial, context: get().context });
+    }, 600);
   },
 }));
