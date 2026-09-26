@@ -1,0 +1,94 @@
+{
+  "_fixture": {
+    "label": "DEV FIXTURE",
+    "note": "Development fixture in Oriane wire shape (SearchContentsResponse.FullResult). Hand-authored for pipeline development; not Oriane output. Metrics are zeroed and no corpus data is included."
+  },
+  "result": {
+    "id": "fixture-content-0001",
+    "matchedQueries": [],
+    "platform": "tiktok",
+    "profileHandle": "dev.fixture",
+    "profileDisplayName": "Development Fixture",
+    "format": "video",
+    "caption": "the order matters more than the product #lumenserum #skincare",
+    "captionLanguage": "en",
+    "thumbnailMediaId": null,
+    "publishedAt": "2026-01-01T00:00:00.000Z",
+    "profileId": null,
+    "thumbnailMediaUrl": null,
+    "viewsCount": 0,
+    "likesCount": 0,
+    "sharesCount": 0,
+    "commentsCount": 0,
+    "interactionsCount": 0,
+    "engagementRatePerViews": null,
+    "engagementRatePerFollowers": null,
+    "profileFollowersCount": 0,
+    "profileFollowingCount": 0,
+    "profilePostsCount": 0,
+    "mediaCount": 1,
+    "duration": 19.4,
+    "hashtags": [
+      "lumenserum",
+      "skincare"
+    ],
+    "coAuthors": [],
+    "mentions": [],
+    "platformId": "0000000000000000001",
+    "profilePlatformId": "0",
+    "profilePictureUrl": "",
+    "profileBio": null,
+    "profileVerified": false,
+    "locationPlatformId": null,
+    "locationCompleteAddress": null,
+    "locationLatitude": null,
+    "locationLongitude": null,
+    "profileLocationPlatformId": null,
+    "profileLocationCompleteAddress": null,
+    "profileLocationLatitude": null,
+    "profileLocationLongitude": null,
+    "transcript": "Here's why your serum isn't doing anything? Most people put it on in completely the wrong order, every single morning. Dermatologists say go from thinnest texture to thickest. So basically what you want to do is make sure you're being really careful and you're doing it the way it's actually supposed to be done, okay, so yeah. That's why Lumen serum goes first and locks the moisture in. Link in bio for the full three step routine.",
+    "transcriptLanguage": "en",
+    "transcriptChunks": [
+      {
+        "startSeconds": 0,
+        "endSeconds": 2.4,
+        "text": "Here's why your serum isn't doing anything?"
+      },
+      {
+        "startSeconds": 2.4,
+        "endSeconds": 5.2,
+        "text": "Most people put it on in completely the wrong order, every single morning."
+      },
+      {
+        "startSeconds": 5.2,
+        "endSeconds": 7.6,
+        "text": "Dermatologists say go from thinnest texture to thickest."
+      },
+      {
+        "startSeconds": 7.6,
+        "endSeconds": 12.9,
+        "text": "So basically what you want to do is make sure you're being really careful and you're doing it the way it's actually supposed to be done, okay, so yeah."
+      },
+      {
+        "startSeconds": 12.9,
+        "endSeconds": 15.8,
+        "text": "That's why Lumen serum goes first and locks the moisture in."
+      },
+      {
+        "startSeconds": 15.8,
+        "endSeconds": 19.4,
+        "text": "Link in bio for the full three step routine."
+      }
+    ],
+    "frames": [],
+    "audioPlatformId": null,
+    "audioTitle": null,
+    "audioAuthor": null,
+    "audioType": null,
+    "audioCopyrighted": null,
+    "popularComments": [],
+    "createdAt": null,
+    "updatedAt": null
+  }
+}

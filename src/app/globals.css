@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0b0c0e;
+  --color-ink-1: #111316;
+  --color-ink-2: #16191d;
+  --color-line: rgba(235, 238, 242, 0.08);
+  --color-line-2: rgba(235, 238, 242, 0.14);
+  --color-fg: #eceae4;
+  --color-fg-2: #a9adb3;
+  --color-fg-3: #6d727a;
+  --color-signal: #8fb3ff;
+  --color-fracture: #ff7a45;
+  --color-cf: #9be3c7;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-fg);
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(143, 179, 255, 0.3);
+}
+
+.hairline {
+  border-color: var(--color-line);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.glass {
+  background: rgba(20, 22, 26, 0.62);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  border: 1px solid var(--color-line);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+@keyframes pulse-once {
+  0% { opacity: 0.2; }
+  40% { opacity: 1; }
+  100% { opacity: 0.75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,261 @@
+import type { EvidenceTier } from "./provenance";
+
+export interface EvidenceSource {
+  id: string;
+  short: string;
+  title: string;
+  authors: string;
+  year: number;
+  venue: string;
+  url: string;
+  tier: EvidenceTier;
+  experiment: string;
+  measured: string;
+  finding: string;
+  usage: string;
+  limitation: string;
+}
+
+export const SOURCES: Record<string, EvidenceSource> = {
+  bbbd2026: {
+    id: "bbbd2026",
+    short: "BBBD 2026",
+    title: "The Brain, Body, and Behavior Dataset (BBBD): Multimodal Recordings during Educational Videos",
+    authors: "Madsen, Kuppa & Parra",
+    year: 2026,
+    venue: "Scientific Data",
+    url: "https://www.nature.com/articles/s41597-026-07215-1",
+    tier: "empirical",
+    experiment:
+      "178 participants, five experiments, ~110 h of EEG, EOG, ECG, respiration, pupil, gaze, saccades, blinks and head motion, time-aligned to short educational videos; attentive vs distracted viewing.",
+    measured: "EEG band power, gaze position, saccades, blinks, pupil size, physiological signals.",
+    finding:
+      "Technical validation shows higher alpha-band power during distraction, increased blink rate and reduced saccade rate when attention was diverted.",
+    usage:
+      "Defines the attentive/distracted contrast CORTEX is built around, and the direction of the alpha proxy (distraction → alpha ↑). Participant-level BBBD recordings are not ingested in this build; NEURASCOPE uses published effect directions and the Madsen 2021 gaze-ISC summary statistics from the same laboratory.",
+    limitation: "Educational videos viewed in a lab, not short-form feeds. Effect directions transfer; magnitudes are not calibrated to TikTok/Instagram.",
+  },
+  ki2016: {
+    id: "ki2016",
+    short: "Ki et al. 2016",
+    title: "Attention Strongly Modulates Reliability of Neural Responses to Naturalistic Narrative Stimuli",
+    authors: "Ki, Kelly & Parra",
+    year: 2016,
+    venue: "Journal of Neuroscience 36(10)",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6601758/",
+    tier: "literature",
+    experiment: "EEG while participants watched/listened to narrative stimuli attentively or while performing a distracting counting task.",
+    measured: "Inter-subject correlation (ISC) of EEG; alpha-band power.",
+    finding:
+      "ISC is strongly reduced when viewers are distracted and discriminates attentional state (Az 0.75–1.0 for narratives). Alpha power also increased with distraction but did not classify attentional state across individuals (Az < 0.56).",
+    usage:
+      "Grounds the neural-reliability proxy as the primary population attention readout. Because alpha is not individually diagnostic, NEURASCOPE shows the alpha proxy only as a population envelope, never per viewer.",
+    limitation: "ISC is a population-level measure; NEURASCOPE's ISC is a model proxy, not a measurement from these viewers.",
+  },
+  madsen2021: {
+    id: "madsen2021",
+    short: "Madsen et al. 2021",
+    title: "Synchronized eye movements predict test scores in online video education",
+    authors: "Madsen, Júlio, Gucik, Steinberg & Parra",
+    year: 2021,
+    venue: "PNAS 118(5)",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7865179/",
+    tier: "literature",
+    experiment: "Eye tracking while students watched short online instructional videos, normally and while distracted by a secondary task.",
+    measured: "Inter-subject correlation of gaze position and pupil size.",
+    finding: "Gaze ISC median 0.35 (IQR 0.12) in normal viewing, dropping to 0.12 (IQR 0.18) when distracted; individual ISC predicts test performance.",
+    usage:
+      "Calibrates each synthetic viewer's baseline engagement: sampled from the attentive or distracted gaze-ISC distribution (normal approximation, σ = IQR/1.349) according to cohort regime. Also defines the scale of the gaze-synchrony proxy.",
+    limitation: "Instructional videos, lab and webcam settings. Summary statistics, not participant-level refitting.",
+  },
+  cohen2017: {
+    id: "cohen2017",
+    short: "Cohen, Henin & Parra 2017",
+    title: "Engaging narratives evoke similar neural activity and lead to similar time perception",
+    authors: "Cohen, Henin & Parra",
+    year: 2017,
+    venue: "Scientific Reports 7",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC5496904/",
+    tier: "literature",
+    experiment: "EEG ISC in the lab compared with the survival of online viewers (real-world and ~1,000 MTurk viewers) who chose to keep watching the same videos.",
+    measured: "Behavioral engagement as viewer survival over time; neural engagement as EEG ISC.",
+    finding:
+      "Moment-to-moment variation in experimental engagement correlated with real-world viewer survival (r = 0.60), and neural engagement predicted real-world behavioral engagement (r = 0.56).",
+    usage: "Justifies modeling retention as a survival process driven by a latent engagement state, and linking that state to the neural-reliability proxy.",
+    limitation: "Longer online videos; correlations at 4–21 s time scales, not sub-second.",
+  },
+  poulsen2017: {
+    id: "poulsen2017",
+    short: "Poulsen et al. 2017",
+    title: "EEG in the classroom: Synchronised neural recordings during video presentation",
+    authors: "Poulsen, Kamronn, Dmochowski, Parra & Hansen",
+    year: 2017,
+    venue: "Scientific Reports 7",
+    url: "https://doi.org/10.1038/srep43916",
+    tier: "literature",
+    experiment: "Low-cost wireless EEG recorded simultaneously from groups of students watching videos in a classroom.",
+    measured: "Inter-subject correlation of EEG across a group.",
+    finding: "ISC measured in a group setting varied over the course of videos and was reduced on repeated viewing, consistent with ISC indexing engagement outside the lab.",
+    usage: "Supports treating population neural reliability as a time-resolved engagement signal rather than a single score.",
+    limitation: "Classroom video content; consumer-grade EEG.",
+  },
+  dmochowski2014: {
+    id: "dmochowski2014",
+    short: "Dmochowski et al. 2014",
+    title: "Audience preferences are predicted by temporal reliability of neural processing",
+    authors: "Dmochowski, Bezdek, Abelson, Johnson, Schumacher & Parra",
+    year: 2014,
+    venue: "Nature Communications 5",
+    url: "https://www.nature.com/articles/ncomms5567",
+    tier: "literature",
+    experiment: "EEG from small groups watching TV content and advertisements; compared with large-population preference and viewership data.",
+    measured: "Temporal neural reliability (ISC) across viewers.",
+    finding: "Neural reliability in a small sample predicted population-level preferences and viewership.",
+    usage: "Supports aggregating synthetic viewer attention into a population reliability signal as a predictor of audience-level behavior.",
+    limitation: "Television content; population forecasts, not individual decisions.",
+  },
+  tong2020: {
+    id: "tong2020",
+    short: "Tong et al. 2020",
+    title: "Brain activity forecasts video engagement in an internet attention market",
+    authors: "Tong, Acikalin, Genevsky, Shiv & Knutson",
+    year: 2020,
+    venue: "PNAS 117(12)",
+    url: "https://www.pnas.org/doi/10.1073/pnas.1905178117",
+    tier: "literature",
+    experiment: "fMRI while participants viewed online videos; compared with aggregate engagement on the video platform.",
+    measured: "Regional brain activity at video onset and over time; platform view frequency and duration.",
+    finding: "Early affective brain responses forecast aggregate video engagement beyond behavioral self-report.",
+    usage: "Supports treating the opening seconds as a distinct, high-leverage window (hook hazard) in the synthetic audience.",
+    limitation: "fMRI group-level forecasting; NEURASCOPE does not model affect-specific regions.",
+  },
+  lang2000: {
+    id: "lang2000",
+    short: "Lang 2000 (LC4MP)",
+    title: "The Limited Capacity Model of Mediated Message Processing",
+    authors: "Lang",
+    year: 2000,
+    venue: "Journal of Communication 50(1)",
+    url: "https://doi.org/10.1111/j.1460-2466.2000.tb02833.x",
+    tier: "literature",
+    experiment: "Theoretical synthesis of experimental work on television message processing (orienting responses, secondary-task reaction time, memory).",
+    measured: "Resource allocation to encoding, storage and retrieval as a function of message structure and content.",
+    finding: "Structural features (cuts, onsets) elicit orienting responses that allocate resources; when the information introduced exceeds available resources, encoding suffers (cognitive overload).",
+    usage: "Structures CORTEX's processing-load term: load rises with information introduced per second; attention is penalized only when load exceeds a viewer-specific capacity. Orienting events feed salience.",
+    limitation: "Theory-level; the capacity threshold in NEURASCOPE is a heuristic parameter, not a fitted value.",
+  },
+  fisher2020: {
+    id: "fisher2020",
+    short: "Fisher & Weber 2020 (LC4MP)",
+    title: "Limited Capacity Model of Motivated Mediated Message Processing",
+    authors: "Fisher & Weber",
+    year: 2020,
+    venue: "The International Encyclopedia of Media Psychology",
+    url: "https://doi.org/10.1002/9781119011071.iemp0121",
+    tier: "literature",
+    experiment: "Review of the motivated (LC4MP) extension and its empirical support.",
+    measured: "Motivational activation, resource allocation and memory.",
+    finding: "Motivational relevance modulates how many resources a viewer allocates to a message.",
+    usage: "Motivates viewer-specific relevance and capacity parameters (e.g. Intent Viewer tolerates more exposition than Cold Scroller).",
+    limitation: "Review; mapping to cohort parameters is heuristic.",
+  },
+  deepgaze2022: {
+    id: "deepgaze2022",
+    short: "DeepGaze III 2022",
+    title: "DeepGaze III: Modeling free-viewing human scanpaths with deep learning",
+    authors: "Kümmerer, Bethge & Wallis",
+    year: 2022,
+    venue: "Journal of Vision 22(5)",
+    url: "https://jov.arvojournals.org/article.aspx?articleid=2778776",
+    tier: "literature",
+    experiment: "Deep model of fixation density and scanpaths trained on human free-viewing eye-movement data.",
+    measured: "Fixation locations and scanpaths.",
+    finding: "Image content and scanpath history jointly predict where people look.",
+    usage:
+      "Reference for the gaze-proxy abstraction. This build does not run DeepGaze; the gaze-dispersion proxy uses spatial entropy of image gradient energy as a lightweight stand-in, labeled heuristic.",
+    limitation: "Static images; the proxy here is far simpler than DeepGaze.",
+  },
+  itti2009: {
+    id: "itti2009",
+    short: "Itti & Baldi 2009",
+    title: "Bayesian surprise attracts human attention",
+    authors: "Itti & Baldi",
+    year: 2009,
+    venue: "Vision Research 49(10)",
+    url: "https://doi.org/10.1016/j.visres.2008.09.007",
+    tier: "literature",
+    experiment: "Eye movements of observers watching video clips compared with a model of Bayesian surprise.",
+    measured: "Gaze shifts versus model surprise.",
+    finding: "Observers preferentially attend to locations and moments of high surprise relative to recent history.",
+    usage: "Defines perceptual novelty as deviation of visual change from its recent running statistics.",
+    limitation: "Low-level visual surprise only; semantic surprise uses a separate transcript-derived term.",
+  },
+  jensen2002: {
+    id: "jensen2002",
+    short: "Jensen & Tesche 2002",
+    title: "Frontal theta activity in humans increases with memory load in a working memory task",
+    authors: "Jensen & Tesche",
+    year: 2002,
+    venue: "European Journal of Neuroscience 15(8)",
+    url: "https://doi.org/10.1046/j.1460-9568.2002.01975.x",
+    tier: "literature",
+    experiment: "MEG during a Sternberg working-memory task with varying load.",
+    measured: "Frontal theta power.",
+    finding: "Frontal theta power increases parametrically with memory load.",
+    usage: "Direction of the theta proxy: increases with CORTEX processing load.",
+    limitation: "Task-based working memory, not naturalistic video; used for direction only.",
+  },
+  yeo2011: {
+    id: "yeo2011",
+    short: "Yeo et al. 2011",
+    title: "The organization of the human cerebral cortex estimated by intrinsic functional connectivity",
+    authors: "Yeo, Krienen, Sepulcre et al.",
+    year: 2011,
+    venue: "Journal of Neurophysiology 106(3)",
+    url: "https://doi.org/10.1152/jn.00338.2011",
+    tier: "literature",
+    experiment: "Resting-state fMRI from 1,000 participants clustered into large-scale networks.",
+    measured: "Intrinsic functional connectivity.",
+    finding: "Cortex organizes into reproducible networks (visual, somatomotor, dorsal attention, ventral attention/salience, limbic, frontoparietal, default).",
+    usage:
+      "Groups Desikan–Killiany parcels into the network overlays. Overlay intensity is CORTEX computational demand mapped onto these groupings — not measured or predicted activation.",
+    limitation: "Parcel-level approximation of a voxel-level atlas; networks overlap parcels.",
+  },
+  corbetta2002: {
+    id: "corbetta2002",
+    short: "Corbetta & Shulman 2002",
+    title: "Control of goal-directed and stimulus-driven attention in the brain",
+    authors: "Corbetta & Shulman",
+    year: 2002,
+    venue: "Nature Reviews Neuroscience 3",
+    url: "https://doi.org/10.1038/nrn755",
+    tier: "literature",
+    experiment: "Review of imaging and lesion evidence on attention systems.",
+    measured: "Dorsal (goal-directed) and ventral (stimulus-driven reorienting) attention networks.",
+    finding: "Sustained, goal-directed attention and stimulus-driven reorienting rely on partly segregated frontoparietal systems.",
+    usage: "Maps sustained attention to the dorsal attention overlay and salience/reorienting events to the ventral attention overlay.",
+    limitation: "Interpretive mapping only.",
+  },
+  neurascopeHeuristics: {
+    id: "neurascopeHeuristics",
+    short: "NEURASCOPE heuristics",
+    title: "NEURASCOPE model assumptions (documented heuristics)",
+    authors: "NEURASCOPE",
+    year: 2026,
+    venue: "src/lib/cortex/params.ts",
+    url: "https://github.com/AdvayRoy/NEURASCOPE/blob/main/src/lib/cortex/params.ts",
+    tier: "heuristic",
+    experiment: "None. Parameter choices made to express the cited mechanisms in a short-form feed setting.",
+    measured: "—",
+    finding: "—",
+    usage:
+      "Cohort mixtures, sensitivity weights, hook-window hazard, capacity thresholds, payoff-distance penalty and transcript cue lexicons. All are isolated in one file and labeled D wherever they influence a displayed number.",
+    limitation: "Not fitted to retention data. Treat absolute retention levels as illustrative; relative changes between conditions are the intended output.",
+  },
+};
+
+export function source(id: string): EvidenceSource {
+  const s = SOURCES[id];
+  if (!s) throw new Error(`Unknown evidence source ${id}`);
+  return s;
+}
