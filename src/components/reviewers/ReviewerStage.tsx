@@ -45,8 +45,8 @@ const EYE_YAW = 0.32;
 const EYE_PITCH = 0.22;
 
 /** Bust framing in contract units (shoulders at y=0, head top ≈ 1): head and shoulders fill the slot. */
-const FRAME_Y = 0.56;
-const FRAME_HALF = 0.5;
+const FRAME_Y = 0.63;
+const FRAME_HALF = 0.45;
 /** Presentation-only 3/4 bust turn toward the content (screen left); CORTEX yaw is applied on top at neck/head. */
 const REST_YAW = -0.32;
 
@@ -182,6 +182,7 @@ function Studio() {
       <hemisphereLight args={["#fff1e0", "#3a3230", 0.95]} />
       <directionalLight position={[-2.5, 3, 4]} intensity={2.2} color="#ffe6cc" />
       <directionalLight position={[3, 1.5, -2.5]} intensity={1.3} color="#cdd8ff" />
+      <directionalLight position={[0.5, -2.5, 2.5]} intensity={0.45} color="#ffb98a" />
     </>
   );
 }

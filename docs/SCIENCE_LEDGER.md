@@ -196,7 +196,7 @@ head drift amplitude   = 0.10·(1 − attention) rad
 saccade amplitude gain = 0.15 + 0.85·(1 − attention)   (gaze stability)
 blink-rate gain        = 0.8 + 1.4·(1 − attention)
 brow lowering/narrowing = tension; brow lift = orientingOnset
-mouth smile shape       = clamp(0.30 + 0.60·attention − 1.10·disengage)  (engagement cue drawn from model state; not an emotion label)
+mouth smile shape       = clamp(0.40 + 0.75·attention − 1.40·disengage)  (engagement cue drawn from model state; not an emotion label)
 presence (brightness)   = 0.70 + 0.30·survival (+ selection highlight)
 ```
 

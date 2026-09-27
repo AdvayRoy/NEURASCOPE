@@ -47,7 +47,7 @@ export function reviewerBehavior(r: ReviewerState): ReviewerBehavior {
     blinkRate: 0.8 + 1.4 * (1 - r.attention),
     browTension: r.tension,
     browRaise: r.orientingOnset,
-    smile: clamp(0.3 + 0.6 * r.attention - 1.1 * disengage, 0, 1),
+    smile: clamp(0.4 + 0.75 * r.attention - 1.4 * disengage, 0, 1),
     presence: 0.7 + 0.3 * r.survival,
     disengage,
   };
