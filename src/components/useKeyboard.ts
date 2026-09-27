@@ -15,6 +15,7 @@ export function useKeyboard() {
       else if (e.key === "ArrowLeft") s.seek(s.time - (e.shiftKey ? 1 : 0.1));
       else if (e.key === "Escape") {
         if (s.evidence) s.set({ evidence: null });
+        else if (s.brief) s.set({ brief: false });
         else s.set({ fractureId: null, network: null, activeCf: null });
       } else if (/^[1-9]$/.test(e.key)) {
         const fr = s.run?.fractures[Number(e.key) - 1];

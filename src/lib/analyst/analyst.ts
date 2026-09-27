@@ -4,6 +4,7 @@ import { sampleAt } from "../cortex/simulate";
 import type { Fracture } from "../cortex/fractures";
 import type { CorpusResult } from "../oriane/comparables";
 import { SOURCES } from "../evidence/sources";
+import { decisionSummary } from "../brief/brief";
 
 export type AnalystAction =
   | { kind: "select-fracture"; id: string }
@@ -40,9 +41,17 @@ export function corpusSummary(ev: CorpusResult | "pending" | undefined) {
 }
 
 /** Compact structured context for an optional LLM analyst. */
-export function analystContext(run: CortexRun, fractureId: string | null, cohort: number | null, t: number, corpus?: CorpusResult | "pending") {
+export function analystContext(
+  run: CortexRun,
+  fractureId: string | null,
+  cohort: number | null,
+  t: number,
+  corpus?: CorpusResult | "pending",
+  decision?: { counterfactuals: Record<string, Counterfactual>; corpus: Record<string, CorpusResult | "pending"> },
+) {
   const fr = run.fractures.find((f) => f.id === fractureId);
   return {
+    preflightBrief: decision ? decisionSummary(run, decision.counterfactuals, decision.corpus) : undefined,
     duration: run.timeline.duration,
     time: t,
     cohortFocus: cohort === null ? "all" : COHORTS[cohort].label,

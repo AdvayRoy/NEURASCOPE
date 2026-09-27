@@ -53,6 +53,9 @@ Each cohort is shown as a live 3D synthetic reviewer, labelled "Synthetic behavi
 **2:05 — Intervene.** In Inspector, **Simulate patch** on the top intervention.
 > "The patch edits the feature timeline, not the video, and reruns the same seeded population. The delta is a model prediction, not a guarantee." Toggle Show/Hide to compare curves.
 
+**2:15 — Pre-flight brief.** Header button **PRE-FLIGHT BRIEF** (orange when fractures exist; Esc closes).
+> "This is the decision surface on top of the engine: the single most consequential fracture — the largest excess survival loss CORTEX already ranks — why the model thinks it happens, what was measured in the video, what Oriane shows about relevant published content, the recommended edit, and the same audience's predicted result after it." **Simulate patch** here reruns the same counterfactual; **Open in workspace** jumps to that fracture in the Inspector and timeline. Every value is projected from existing run state; nothing is scored or phrased separately.
+
 **2:25 — Brain modes.** Header tabs **CORTEX → NETWORKS → NEURAL**. In NETWORKS click a network in the legend.
 > "CORTEX and NETWORKS map computational demand onto Desikan–Killiany parcels — not measured activation, no voxel precision. NEURAL shows the reliability proxy (CORTEX attention on Madsen's gaze-ISC scale) as one global tint — not localized, not neural ISC."
 

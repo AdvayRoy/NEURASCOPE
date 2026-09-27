@@ -11,6 +11,7 @@ import { Inspector } from "./Inspector";
 import { Timeline } from "./Timeline";
 import { CouplingOverlay } from "./reviewers/CouplingOverlay";
 import { EvidenceDrawer } from "./EvidenceDrawer";
+import { PreflightBrief } from "./PreflightBrief";
 import { AskBar } from "./AskBar";
 import { NetworkLegend } from "./NetworkLegend";
 import { useKeyboard } from "./useKeyboard";
@@ -27,6 +28,8 @@ export function Workspace() {
   const context = useLab((s) => s.context);
   const cohort = useLab((s) => s.cohort);
   const hover = useLab((s) => s.hoverRegion);
+  const brief = useLab((s) => s.brief);
+  const hasFracture = useLab((s) => (s.run?.fractures.length ?? 0) > 0);
   const set = useLab((s) => s.set);
   const reset = useLab((s) => s.reset);
   useKeyboard();
@@ -47,6 +50,14 @@ export function Workspace() {
           {badge.text}
         </span>
         <div className="ml-auto flex items-center gap-4">
+          <button
+            onClick={() => set({ brief: !brief })}
+            data-testid="brief-toggle"
+            aria-pressed={brief}
+            className={`shrink-0 whitespace-nowrap rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.14em] transition-colors ${hasFracture ? "border-fracture/50 text-fracture hover:bg-fracture/10" : "border-line text-fg-3 hover:text-fg-2"}`}
+          >
+            PRE-FLIGHT BRIEF
+          </button>
           <label className="flex items-center gap-2">
             <span className="label">Audience</span>
             <select
@@ -121,6 +132,7 @@ export function Workspace() {
 
       <Timeline />
       <EvidenceDrawer />
+      <PreflightBrief />
     </div>
   );
 }

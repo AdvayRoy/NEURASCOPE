@@ -40,6 +40,8 @@ interface State {
   activeCf: string | null;
   cfPending: string | null;
   evidence: EvidenceFocus | null;
+  /** Pre-flight Brief drawer open. */
+  brief: boolean;
   /** Oriane corpus evidence per fracture id for the current run; `"pending"` while a request is in flight. */
   corpus: Record<string, CorpusResult | "pending">;
   /** Monotonic counter bumped when the time is changed by a user seek (not playback). */
@@ -69,6 +71,7 @@ const initial = {
   activeCf: null,
   cfPending: null,
   evidence: null,
+  brief: false,
   corpus: {} as Record<string, CorpusResult | "pending">,
   seekNonce: 0,
   hoverRegion: null as { name: string; networks: NetworkId[] } | null,

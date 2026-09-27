@@ -65,6 +65,23 @@ test("fixture → analysis → playback → scrub → cohort → fracture → ev
   await expect(page.getByText(/[+−-]?\d+\.\d pts/).first()).toBeVisible();
   await shot(page, "05-counterfactual");
 
+  // Pre-flight brief: primary risk → simulate → real delta → jump to the fracture.
+  await page.keyboard.press("Escape");
+  await page.getByTestId("brief-toggle").click();
+  const brief = page.getByTestId("preflight-brief");
+  await expect(brief).toBeVisible();
+  const primary = (await brief.getByText(/^F\d$/).first().textContent())!;
+  await expect(brief.getByText(/pts survival$/)).toBeVisible();
+  await expect(brief.getByText(/Corpus evidence · not retention ground truth|Oriane/).first()).toBeVisible();
+  const simulate = brief.getByTestId("brief-simulate");
+  if (await simulate.isVisible()) await simulate.click();
+  await expect(brief.getByTestId("brief-result")).toBeVisible({ timeout: 30_000 });
+  await expect(brief.getByText(/[+−-]?\d+\.\d pts/).first()).toBeVisible();
+  await shot(page, "05b-brief");
+  await brief.getByTestId("brief-jump").click();
+  await expect(brief).toBeHidden();
+  await expect(page.getByText(`ATTENTION FRACTURE ${primary}`)).toBeVisible();
+
   // Refresh restores the prior completed analysis with its provenance.
   await page.reload();
   await expect(badge).toBeVisible({ timeout: 60_000 });

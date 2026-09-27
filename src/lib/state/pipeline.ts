@@ -49,7 +49,7 @@ async function cachedLiveAnalysis(url: string): Promise<VideoOntology | null> {
 export async function runPipeline(input: RunInput) {
   const gen = ++generation;
   const lab = useLab.getState();
-  lab.set({ phase: "loading", steps: STEPS.map((s) => ({ ...s })), error: null, run: null, counterfactuals: {}, activeCf: null, fractureId: null, time: 0, corpus: {} });
+  lab.set({ phase: "loading", steps: STEPS.map((s) => ({ ...s })), error: null, run: null, counterfactuals: {}, activeCf: null, fractureId: null, time: 0, corpus: {}, brief: false });
   try {
     step("acquire", "active");
     let ontology: VideoOntology | null = null;
