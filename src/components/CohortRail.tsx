@@ -102,9 +102,8 @@ export function CohortRail() {
           })}
         </ul>
       </div>
-      <div className="mt-1.5 text-[9px] tracking-[0.02em] text-fg-3" title="Head orientation, gaze, eye aperture, blink rate, brow tension, posture and presence encode each cohort's modeled attention, hazard, orienting, load, fracture impact and survival at the current time. Breathing, blinks and small eye movements are a seeded idle layer. No emotion is recognised or measured.">
+      <div className="mt-1.5 text-[9px] tracking-[0.02em] text-fg-3" title="Head orientation, gaze, eye aperture, blink rate, brow tension, posture and presence encode each cohort's modeled attention, hazard, orienting, load, fracture impact and survival at the current time. Breathing, blinks and small eye movements are a seeded idle layer. Lines from the brain are a CORTEX state projection: model coupling, not a biological signal. No emotion is recognised or measured.">
         Synthetic behavioral expression · CORTEX visualization · not measured emotion
-        <span className="block">Links to the brain · CORTEX state projection (model coupling, not a biological signal)</span>
       </div>
     </div>
   );

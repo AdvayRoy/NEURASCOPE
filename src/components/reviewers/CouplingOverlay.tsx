@@ -54,11 +54,12 @@ export function CouplingOverlay() {
         geomAge = 0;
         const host = root.getBoundingClientRect();
         const brain = document.querySelector("[data-brain-stage]")?.getBoundingClientRect();
+        const rail = document.querySelector("[data-reviewer-rail]")?.getBoundingClientRect();
         geo = COHORTS.map((c) => {
           const el = document.querySelector(`[data-reviewer-anchor="${c.id}"]`)?.getBoundingClientRect();
-          if (!brain || !el || el.width === 0) return null;
+          if (!brain || !rail || !el || el.width === 0) return null;
           const a: P = [brain.left - host.left + brain.width * 0.74, brain.top - host.top + brain.height * 0.46];
-          const d: P = [el.left - host.left + 2, el.top - host.top + el.height * 0.5];
+          const d: P = [rail.left - host.left + 1, el.top - host.top + el.height * 0.5];
           const dx = d[0] - a[0];
           return { a, b: [a[0] + dx * 0.55, a[1]] as P, c: [d[0] - dx * 0.4, d[1]] as P, d };
         }).filter((g): g is { a: P; b: P; c: P; d: P } => g !== null);

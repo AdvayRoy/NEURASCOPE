@@ -87,7 +87,7 @@ export function Workspace() {
               <BrainCanvas />
             </GlBoundary>
           </div>
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[6] flex items-start justify-between p-4">
             <Metrics />
             <NetworkLegend />
           </div>
@@ -112,7 +112,7 @@ export function Workspace() {
             <AskBar />
           </div>
         </section>
-        <aside className="flex min-h-0 min-w-0 flex-col">
+        <aside data-reviewer-rail className="flex min-h-0 min-w-0 flex-col">
           <CohortRail />
           <Inspector />
         </aside>

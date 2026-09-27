@@ -84,9 +84,9 @@ const VARIANTS: Record<CohortId, Variant> = {
       add(head, geos().sphere, h, [0, -0.45, -0.46], [1.02, 1.35, 0.55]);
       add(head, geos().sphere, h, [0.84, -0.5, 0.02], [0.3, 1.05, 0.5]);
       add(head, geos().sphere, h, [-0.84, -0.5, 0.02], [0.3, 1.05, 0.5]);
-      const gold = mat("#d9a53f", { roughness: 0.35, metalness: 0.7 });
-      add(head, geos().ring, gold, [0.94, -0.42, 0.12], [0.11, 0.11, 0.11], [0, Math.PI / 2, 0]);
-      add(head, geos().ring, gold, [-0.94, -0.42, 0.12], [0.11, 0.11, 0.11], [0, Math.PI / 2, 0]);
+      const gold = mat("#f2c14e", { roughness: 0.3, metalness: 0.2 });
+      add(head, geos().ring, gold, [0.74, -0.66, 0.52], [0.13, 0.13, 0.2], [0, 0.5, 0]);
+      add(head, geos().ring, gold, [-0.74, -0.66, 0.52], [0.13, 0.13, 0.2], [0, -0.5, 0]);
     },
   },
   visual: {
