@@ -89,6 +89,7 @@ export async function findComparables(input: { imageUrl?: string; text?: string;
       requestId: res.metadata.requestId,
     };
   } catch (e) {
-    return { available: false, reason: `Oriane corpus search failed: ${(e as Error).message}` };
+    console.error("Oriane corpus search failed", e);
+    return { available: false, reason: "Oriane corpus search failed." };
   }
 }

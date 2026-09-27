@@ -15,12 +15,12 @@ export function parseContentUrl(raw: string): ParsedContentUrl | null {
     return null;
   }
   const host = u.hostname.replace(/^www\./, "").replace(/^m\./, "");
-  if (host.endsWith("tiktok.com")) {
+  if (host === "tiktok.com" || host.endsWith(".tiktok.com")) {
     const m = u.pathname.match(/\/video\/(\d+)/) ?? u.pathname.match(/\/v\/(\d+)/);
     if (m) return { platform: "tiktok", platformId: m[1], url: u.toString() };
     return null;
   }
-  if (host.endsWith("instagram.com")) {
+  if (host === "instagram.com" || host.endsWith(".instagram.com")) {
     const m = u.pathname.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
     if (m) return { platform: "instagram", platformId: m[1], url: u.toString() };
   }

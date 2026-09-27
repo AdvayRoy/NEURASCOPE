@@ -65,6 +65,10 @@ const VIEW_PITCH = 0.06;
 function Reviewer({ geometry, cohort, slot }: { geometry: THREE.BufferGeometry; cohort: number; slot: RefObject<HTMLDivElement | null> }) {
   const { material, uniforms } = useMemo(() => createReviewerMaterial(), []);
   const gaze = useMemo(() => new THREE.MeshBasicMaterial({ color: "#8fb3ff", transparent: true, opacity: 0, depthWrite: false }), []);
+  useEffect(() => () => {
+    material.dispose();
+    gaze.dispose();
+  }, [material, gaze]);
   const place = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
   const gl = useThree((s) => s.gl);
@@ -72,7 +76,7 @@ function Reviewer({ geometry, cohort, slot }: { geometry: THREE.BufferGeometry; 
   const run = useLab((s) => s.run);
   const cf = useLab((s) => (s.activeCf ? s.counterfactuals[s.activeCf] : null));
   const src = cf?.run ?? run;
-  const base = useMemo(() => (src ? hazardReference(src) : null), [src]);
+  const base = useMemo(() => (run ? hazardReference(run) : null), [run]);
   useFrame((_, dt) => {
     const g = head.current;
     const p = place.current;

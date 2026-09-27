@@ -80,13 +80,12 @@ function Brain({ asset, interactive }: { asset: BrainAsset; interactive: boolean
         target[4 * r + 2] = fr && inFocus && !cf ? 1 : 0;
       }
     } else if (src && s.mode === "neural") {
-      // Neural reliability proxy: global modulation, strongest over posterior/visual and semantic parcels.
+      // Reliability proxy is a single global scalar; it is shown uniformly, never spatialized.
       const isc = sampleAt(src.eeg.isc, src.sim.hz, s.time);
       const k = Math.min(1, Math.max(0, (isc - 0.12) / 0.23));
       for (let r = 0; r < asset.regions.length; r++) {
         if (!map[r].length) continue;
-        const w = map[r].includes("visual") || map[r].includes("semantic") ? 1 : 0.55;
-        target[4 * r] = k * w;
+        target[4 * r] = k;
         target[4 * r + 1] = 1;
       }
     }

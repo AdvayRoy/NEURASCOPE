@@ -19,19 +19,35 @@ const buckets = new Map<string, Bucket>();
 
 export function clientIp(req: Request): string {
   const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim().slice(0, 64);
+  // Right-most hop is the one appended by the nearest (trusted) proxy; left entries are client-controlled.
+  if (fwd) return (fwd.split(",").pop() ?? "").trim().slice(0, 64) || "unknown";
   return (req.headers.get("x-real-ip") ?? "local").slice(0, 64);
 }
 
-/** In-memory per-IP token bucket. Returns a 429 response when exhausted, otherwise null. */
+/** Route-wide ceiling applied on top of per-IP buckets, so rotating addresses cannot bypass the budget. */
+const GLOBAL_FACTOR = 10;
+
+/** In-memory per-IP token bucket plus a route-wide bucket. Returns a 429 response when exhausted, otherwise null. */
 export function rateLimit(req: Request, p: RateLimitPolicy, now = Date.now()): NextResponse | null {
-  const key = `${p.name}:${clientIp(req)}`;
+  const global = take(`${p.name}:*`, { ...p, capacity: p.capacity * GLOBAL_FACTOR, perMinute: p.perMinute * GLOBAL_FACTOR }, now);
+  if (global) return global;
+  return take(`${p.name}:${clientIp(req)}`, p, now);
+}
+
+function take(key: string, p: RateLimitPolicy, now: number): NextResponse | null {
   const rate = p.perMinute / 60_000;
   const b = buckets.get(key) ?? { tokens: p.capacity, updated: now };
   b.tokens = Math.min(p.capacity, b.tokens + (now - b.updated) * rate);
   b.updated = now;
   buckets.delete(key);
-  if (buckets.size >= MAX_KEYS) buckets.delete(buckets.keys().next().value as string);
+  if (buckets.size >= MAX_KEYS) {
+    for (const k of buckets.keys()) {
+      if (!k.endsWith(":*")) {
+        buckets.delete(k);
+        break;
+      }
+    }
+  }
   if (b.tokens < 1) {
     buckets.set(key, b);
     const retry = Math.max(1, Math.ceil((1 - b.tokens) / rate / 1000));

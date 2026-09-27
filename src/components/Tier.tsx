@@ -23,6 +23,7 @@ export function Tier({ tier, sources, context }: { tier: EvidenceTier; sources?:
     <button
       type="button"
       title={tierTitle(tier, sources)}
+      aria-label={tierTitle(tier, sources)}
       onClick={(e) => {
         e.stopPropagation();
         if (sources?.length) set({ evidence: { sourceIds: sources, context: `Value tier ${TIER_LETTER[tier]} · ${TIER_LABEL[tier]} — ${context ?? TIER_DESCRIPTION[tier]}` } });

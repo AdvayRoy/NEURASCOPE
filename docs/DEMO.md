@@ -30,11 +30,11 @@ Notes:
 **0:15 — Loading.** Steps: acquire → extract → simulate.
 > "10,000 seeded synthetic viewers across four behavioral cohorts. Same seed, same answer."
 
-**0:25 — Workspace overview.** Point at the provenance badge, video/transcript pane, Metrics strip (Attention, Load/capacity, Neural reliability, Predicted survival), each with a tier chip.
+**0:25 — Workspace overview.** Point at the provenance badge, video/transcript pane, Metrics strip (Attention, Load/capacity, Gaze-sync proxy, Predicted survival), each with a tier chip.
 > "Every number carries an evidence tier. A is empirical data, B literature, C model-derived, D heuristic. All the outputs you see are C — computed by CORTEX, calibrated by literature where possible."
 
 **0:40 — Timeline.** Press Space (play) or scrub; arrow keys step 0.1 s (Shift = 1 s).
-> "Retention is the mean survival of 10k viewers. Hazard is the per-second drop-off risk. The bottom lane is a predicted EEG signature — explicitly a synthetic proxy, not a measurement."
+> "Retention is the mean survival of 10k viewers. Hazard is the per-second drop-off risk. The bottom lane is an illustrative synthetic EEG proxy driven by CORTEX attention and load — not a measurement or a forecast of real EEG."
 
 **1:00 — Cohorts / synthetic reviewers (right rail).** Click **Cold Scroller**, then **All viewers**.
 > "Selecting a cohort filters everything — brain, timeline, audience field, inspector. Cohorts are behavioral regimes, not demographics." 
@@ -51,7 +51,7 @@ Each cohort is shown as a live 3D synthetic reviewer, labelled "Synthetic behavi
 > "The patch edits the feature timeline, not the video, and reruns the same seeded population. The delta is a model prediction, not a guarantee." Toggle Show/Hide to compare curves.
 
 **2:25 — Brain modes.** Header tabs **CORTEX → NETWORKS → NEURAL**. In NETWORKS click a network in the legend.
-> "CORTEX and NETWORKS map computational demand onto Desikan–Killiany parcels — not measured activation, no voxel precision. NEURAL shows the neural-reliability proxy: attention mapped onto the gaze-ISC scale."
+> "CORTEX and NETWORKS map computational demand onto Desikan–Killiany parcels — not measured activation, no voxel precision. NEURAL shows the reliability proxy (CORTEX attention on Madsen's gaze-ISC scale) as one global tint — not localized, not neural ISC."
 
 **2:45 — Ask.** Click a suggestion in the AskBar, e.g. "Is the EEG measured?"
 > "Answers are computed deterministically from CORTEX state; an LLM, if configured, only phrases that state and can't invent numbers."

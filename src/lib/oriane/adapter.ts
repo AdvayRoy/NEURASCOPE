@@ -41,7 +41,9 @@ export async function resolveLive(url: string, client = OrianeClient.fromEnv()):
     };
   } catch (e) {
     const err = e as OrianeError;
-    return { ok: false, status: err.status ?? 502, code: "ORIANE_ERROR", message: `${err.code ?? "ERROR"}: ${err.message}` };
+    console.error("Oriane resolve failed", err.status, err.code, err.message);
+    const notFound = err.status === 404;
+    return { ok: false, status: notFound ? 404 : 502, code: "ORIANE_ERROR", message: notFound ? "Oriane has no record for this URL." : "Oriane request failed. Try again or run locally." };
   }
 }
 

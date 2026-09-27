@@ -141,7 +141,7 @@ Sources: cohen2017 (retention as survival driven by latent engagement), madsen20
 |---|---|---|---|
 | Attention | `attention(t)` (cohort-specific if a cohort is selected) | C | madsen2021, ki2016, neurascopeHeuristics |
 | Load / capacity | `min(1.5, load(t))` | C | lang2000 |
-| Neural reliability | `eeg.isc(t)` (see §7) | **C** (calibrated by madsen2021, ki2016) | madsen2021, ki2016 |
+| Gaze-sync proxy (reliability) | `eeg.isc(t)` (see §7) | **C** (calibrated by madsen2021, ki2016) | madsen2021, ki2016 |
 | Predicted survival | `R(t)` | C | cohen2017, neurascopeHeuristics |
 
 Values are linearly interpolated with `sampleAt`.
@@ -208,7 +208,7 @@ Computational demand mapped onto Desikan–Killiany parcel groupings (grouping: 
 | Semantic (SEM) | `progression·a` |
 | Control (CTRL) | `min(1, load)·(0.4 + 0.6a)` |
 
-`a` = population attention. With a cohort selected, `BrainCanvas.tsx` scales values by `attention_c / max(0.05, attention)`. NEURAL mode renders `k = clamp01((isc − 0.12)/0.23)` globally, weight 1 on visual/semantic parcels and 0.55 elsewhere. Mixing weights are Tier D.
+`a` = population attention. With a cohort selected, `BrainCanvas.tsx` scales values by `attention_c / max(0.05, attention)`. NEURAL mode renders `k = clamp01((isc − 0.12)/0.23)` as a uniform tint on every parcel: the proxy is a single global scalar on a gaze-ISC scale, not a neural or localized measure.
 
 ## 9. Interventions and counterfactuals — `interventions.ts`, `index.ts`
 

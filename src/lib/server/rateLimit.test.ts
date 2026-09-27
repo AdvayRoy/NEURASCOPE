@@ -17,6 +17,15 @@ describe("rateLimit", () => {
     expect(rateLimit(req("2.2.2.2"), policy, 0)).toBeNull();
     expect(rateLimit(req("1.1.1.1"), policy, 10_000)).toBeNull();
   });
+  it("keys on the proxy-appended hop, not the client-supplied left entries", () => {
+    for (let i = 0; i < 3; i++) expect(rateLimit(req(`9.9.9.${i}, 1.1.1.1`), policy, 0)).toBeNull();
+    expect(rateLimit(req("9.9.9.99, 1.1.1.1"), policy, 0)?.status).toBe(429);
+  });
+  it("caps the route globally when addresses rotate", () => {
+    let ok = 0;
+    for (let i = 0; i < 100; i++) if (rateLimit(req(`10.0.0.${i}`), policy, 0) === null) ok++;
+    expect(ok).toBe(30);
+  });
 });
 
 describe("BoundedCache", () => {

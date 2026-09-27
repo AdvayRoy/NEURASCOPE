@@ -6,7 +6,7 @@ import { Tier } from "./Tier";
 const LABELS: Record<string, [string, (v: number) => string]> = {
   attention: ["Attention", (v) => `${Math.round(v * 100)}`],
   load: ["Load / capacity", (v) => `${Math.round(v * 100)}%`],
-  reliability: ["Neural reliability", (v) => v.toFixed(2)],
+  reliability: ["Gaze-sync proxy", (v) => v.toFixed(2)],
   survival: ["Predicted survival", (v) => `${Math.round(v * 100)}%`],
 };
 

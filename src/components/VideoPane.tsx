@@ -76,7 +76,9 @@ export function VideoPane() {
               <span className="text-[11px] leading-relaxed text-fg-3">
                 {ontology.source === "dev-fixture"
                   ? "The development fixture carries a transcript only. Upload the matching clip to measure visual and audio signals."
-                  : "Oriane returned no keyframes for this record."}
+                  : ontology.source === "oriane-live"
+                    ? "Oriane returned no keyframes for this record."
+                    : "No local clip attached to this analysis."}
               </span>
             </div>
           )}

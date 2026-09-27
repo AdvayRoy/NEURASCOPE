@@ -1,6 +1,6 @@
 "use client";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { COHORTS } from "@/lib/cortex/params";
 import { useLab } from "@/lib/state/store";
@@ -78,6 +78,10 @@ export function AudienceField() {
     });
     return { geometry: g, material: m };
   }, [src]);
+  useEffect(() => () => {
+    geometry.dispose();
+    material.dispose();
+  }, [geometry, material]);
 
   useFrame(({ gl }) => {
     const s = useLab.getState();

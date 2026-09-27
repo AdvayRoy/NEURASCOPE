@@ -42,10 +42,14 @@ export function CohortRail() {
     <div className="border-b border-line px-4 pt-3 pb-2.5">
       <div className="label mb-2 flex items-center justify-between">
         <span>Synthetic reviewers</span>
-        <Tier tier="heuristic" sources={["madsen2021", "fisher2020", "neurascopeHeuristics"]} context="Cohort regimes and mixture" />
+        <span className="flex items-center gap-1">
+          <Tier tier="derived" sources={["cohen2017", "tong2020", "neurascopeHeuristics"]} context="Per-cohort survival, fracture loss share and sparklines · CORTEX simulation" />
+          <Tier tier="heuristic" sources={["madsen2021", "fisher2020", "neurascopeHeuristics"]} context="Cohort regimes and mixture weights" />
+        </span>
       </div>
       <button
         data-testid="reviewer-all"
+        aria-pressed={allOn}
         onClick={() => set({ cohort: null })}
         className={`mb-1.5 flex w-full items-center gap-3 rounded-md px-2 py-[3px] text-left transition-colors ${allOn ? "bg-fg/[0.06]" : "hover:bg-fg/[0.03]"}`}
       >
@@ -78,7 +82,7 @@ export function CohortRail() {
                   <div ref={slots[i]} className="h-[64px] w-full" aria-hidden />
                   <div className="px-2 pt-1 pb-1.5">
                     <div className="flex items-baseline justify-between gap-1">
-                      <span className={`truncate text-[11px] ${on ? "text-fg" : "text-fg-2"}`}>{c.label}</span>
+                      <span title={c.label} className={`truncate text-[11px] ${on ? "text-fg" : "text-fg-2"}`}>{c.label}</span>
                       <span className="num text-[11.5px] text-fg">{Math.round(sampleAt(data, hz, time) * 100)}%</span>
                     </div>
                     <div className="mt-0.5 flex items-center justify-between gap-1">
