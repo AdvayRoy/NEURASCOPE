@@ -115,12 +115,37 @@ if MODE in ("views", "all"):
         aim(35, 0.6, 1.2)
         render(os.path.join(OUT, f"{cid}_34.png"), 512, 512)
 
+TILE_W, TILE_H, HEAD_PX = 110, 124, 70
+
+
+def head_extent(cid):
+    """(chin y, top y) in world Z: chin from the face mesh, top from everything on the head."""
+    ys_face, ys_all = [], []
+    for o in descendants(roots[cid]):
+        if o.type != "MESH" or o.name.endswith("_body"):
+            continue
+        zs = [(o.matrix_world @ v.co).z for v in o.data.vertices]
+        ys_all += zs
+        if o.name.endswith("_face"):
+            ys_face += zs
+    return min(ys_face), max(ys_all)
+
+
 if MODE in ("strip", "all"):
+    ext = {cid: head_extent(cid) for cid in IDS}
+    hmean = sum(t - c for c, t in ext.values()) / len(IDS)
+    top = max(t for _, t in ext.values())
+    frame_h = TILE_H * hmean / HEAD_PX
+    target = top + 0.02 - frame_h / 2 + frame_h * 8 / TILE_H
+    with open(os.path.join(OUT, "strip_scale.txt"), "w") as f:
+        for cid in IDS:
+            c, t = ext[cid]
+            f.write(f"{cid} head_px={(t - c) / frame_h * TILE_H:.1f}\n")
     for cid in IDS:
         show(cid)
-        aim(20, 0.62, 0.8, pitch_deg=3)
-        render(os.path.join(OUT, f"tile_{cid}.png"), 104, 112)
-        render(os.path.join(OUT, f"tile2x_{cid}.png"), 208, 224)
+        aim(25, target, frame_h, dist=4.0)
+        render(os.path.join(OUT, f"tile_{cid}.png"), TILE_W, TILE_H)
+        render(os.path.join(OUT, f"tile2x_{cid}.png"), TILE_W * 2, TILE_H * 2)
 
 if MODE in ("rig", "all"):
     states = [("neutral", {}, (0, 0)), ("blink", {"blink_L": 1, "blink_R": 1}, (0, 0)), ("half blink", {"blink_L": 0.5, "blink_R": 0.5}, (0, 0)),

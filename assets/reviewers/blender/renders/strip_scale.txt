@@ -1,0 +1,4 @@
+cold head_px=70.9
+intent head_px=68.1
+visual head_px=68.0
+enthusiast head_px=72.9

@@ -19,9 +19,10 @@ def on_bg(im):
 
 
 def rail(scale):
-    tw, th = 104 * scale, 112 * scale
+    tile = Image.open(os.path.join(D, f"tile{'2x' if scale == 2 else ''}_{IDS[0]}.png"))
+    tw, th = tile.size
     card_h = th + 16 * scale
-    W, H = 300 * scale, card_h * 4 + 10 * scale * 5
+    W, H = tw + 160 * scale, card_h * 4 + 10 * scale * 5
     S = Image.new("RGBA", (W, H), BG)
     dr = ImageDraw.Draw(S)
     for k, cid in enumerate(IDS):
@@ -29,7 +30,7 @@ def rail(scale):
         dr.rounded_rectangle((8 * scale, y, W - 8 * scale, y + card_h), 8 * scale, fill=(24, 27, 32), outline=(40, 44, 52))
         tile = Image.open(os.path.join(D, f"tile{'2x' if scale == 2 else ''}_{cid}.png")).convert("RGBA")
         S.alpha_composite(tile, (18 * scale, y + 8 * scale))
-        dr.text((135 * scale, y + 20 * scale), NAMES[k], fill=(230, 232, 236))
+        dr.text((tw + 30 * scale, y + 20 * scale), NAMES[k], fill=(230, 232, 236))
     return S
 
 
