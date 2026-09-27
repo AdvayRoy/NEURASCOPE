@@ -76,6 +76,7 @@ function makeActor(rig: ReviewerRig, cohort: number): Actor {
     open: new Spring(1, 90),
     brow: new Spring(0, 40),
     raise: new Spring(0, 70),
+    smile: new Spring(0.5, 10),
     presence: new Spring(1, 16),
     scale: new Spring(1, 50),
   };
@@ -150,6 +151,7 @@ function makeActor(rig: ReviewerRig, cohort: number): Actor {
       setMorph(rig, "browDown", Math.min(1, brow * 0.9));
       setMorph(rig, "browUp", Math.min(1, raise * 0.8));
       setMorph(rig, "mouthOpen", mouth);
+      setMorph(rig, "smile", S.smile.step(B.smile, dt));
       const k = Math.min(1.1, presence);
       for (const m of rig.materials) m.mat.color.copy(m.base).multiplyScalar(k);
     },
@@ -177,8 +179,8 @@ function Studio() {
   }, [gl, scene]);
   return (
     <>
-      <hemisphereLight args={["#fff5ea", "#2d313a", 0.9]} />
-      <directionalLight position={[-2.5, 3, 4]} intensity={2.1} color="#fff1e2" />
+      <hemisphereLight args={["#fff1e0", "#3a3230", 0.95]} />
+      <directionalLight position={[-2.5, 3, 4]} intensity={2.2} color="#ffe6cc" />
       <directionalLight position={[3, 1.5, -2.5]} intensity={1.3} color="#cdd8ff" />
     </>
   );

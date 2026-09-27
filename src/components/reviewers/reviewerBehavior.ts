@@ -23,6 +23,8 @@ export interface ReviewerBehavior {
   browTension: number;
   /** Brief brow lift on an orienting onset, 0..1. */
   browRaise: number;
+  /** Closed-mouth smile shape, 0..1: sustained engagement; flattens as the cohort disengages. */
+  smile: number;
   /** Material presence (brightness), from survival. */
   presence: number;
   /** Combined withdrawal + fracture drive, 0..1. */
@@ -45,6 +47,7 @@ export function reviewerBehavior(r: ReviewerState): ReviewerBehavior {
     blinkRate: 0.8 + 1.4 * (1 - r.attention),
     browTension: r.tension,
     browRaise: r.orientingOnset,
+    smile: clamp(0.3 + 0.6 * r.attention - 1.1 * disengage, 0, 1),
     presence: 0.7 + 0.3 * r.survival,
     disengage,
   };

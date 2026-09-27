@@ -172,7 +172,7 @@ Visual encoding only (label: "Synthetic behavioral expression · CORTEX visualiz
 
 Pipeline: `video → CORTEX run → cohort-conditioned state (reviewerState.ts) → behaviour targets (reviewerBehavior.ts) → springs → rig (rig.ts, ReviewerStage.tsx)`.
 
-**Rig.** Four stylised characters ship in one asset, `public/models/reviewers.glb`. Each one has the same bone and shape-key contract: bones `Chest → Neck → Head → Eye_L/Eye_R`, and shape keys `blink_L/R, wide, browDown, browUp, mouthOpen`. All four render in one shared R3F canvas, one scissored viewport and perspective camera per rail slot.
+**Rig.** Four stylised characters ship in one asset, `public/models/reviewers.glb`. Each one has the same bone and shape-key contract: bones `Chest → Neck → Head → Eye_L/Eye_R`, and shape keys `blink_L/R, wide, browDown, browUp, mouthOpen` (plus optional `smile`). All four render in one shared R3F canvas, one scissored viewport and perspective camera per rail slot.
 
 **CORTEX layer** (deterministic, from cohort state at the playhead `t`, all clamped to [0, 1]):
 
@@ -196,6 +196,7 @@ head drift amplitude   = 0.10·(1 − attention) rad
 saccade amplitude gain = 0.15 + 0.85·(1 − attention)   (gaze stability)
 blink-rate gain        = 0.8 + 1.4·(1 − attention)
 brow lowering/narrowing = tension; brow lift = orientingOnset
+mouth smile shape       = clamp(0.30 + 0.60·attention − 1.10·disengage)  (engagement cue drawn from model state; not an emotion label)
 presence (brightness)   = 0.70 + 0.30·survival (+ selection highlight)
 ```
 

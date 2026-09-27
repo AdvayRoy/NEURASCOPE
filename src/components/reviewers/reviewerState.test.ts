@@ -35,6 +35,7 @@ describe("reviewerBehavior", () => {
     const hit = reviewerBehavior({ ...s, withdrawal: 0, fracture: 1 });
     expect(hit.yaw).toBeGreaterThan(calm.yaw);
     expect(hit.eyeOpen).toBeLessThan(calm.eyeOpen);
+    expect(hit.smile).toBeLessThan(calm.smile);
   });
   it("destabilises gaze and raises blink rate as attention falls", () => {
     const s = reviewerState(run, 1, 1, base);

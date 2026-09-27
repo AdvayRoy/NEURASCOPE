@@ -10,7 +10,7 @@ export const REVIEWER_ACCENT: Record<CohortId, string> = {
   enthusiast: "#e2c46a",
 };
 
-export const MORPHS = ["blink_L", "blink_R", "wide", "browDown", "browUp", "mouthOpen"] as const;
+export const MORPHS = ["blink_L", "blink_R", "wide", "browDown", "browUp", "mouthOpen", "smile"] as const;
 export type Morph = (typeof MORPHS)[number];
 
 interface Joint {
