@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 const SYSTEM = `You are the NEURASCOPE analyst. You explain the output of CORTEX, a computational attention model, to short-form creative teams.
 Rules: use only the structured state you are given; never invent numbers, studies, or brain claims; say "the model predicts" for predictions;
 distinguish evidence tiers (A empirical, B literature, C model-derived, D heuristic); never describe synthetic EEG as measured; be concise (under 120 words).`;
 
 export async function POST(req: Request) {
-  const { question, context } = (await req.json()) as { question: unknown; context: unknown };
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) return NextResponse.json({ answer: null, provider: null }, { status: 501 });
+  const limited = rateLimit(req, { name: "analyst", capacity: 8, perMinute: 6 });
+  if (limited) return limited;
+  const { question, context } = (await req.json().catch(() => ({}))) as { question: unknown; context: unknown };
   if (typeof question !== "string" || !question.trim() || question.length > 500) {
     return NextResponse.json({ answer: null, provider: null, error: "Question must be 1–500 characters." }, { status: 400 });
   }
