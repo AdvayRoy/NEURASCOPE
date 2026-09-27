@@ -164,7 +164,7 @@ export function Timeline() {
   };
 
   return (
-    <section className="relative border-t border-line bg-ink" aria-label="Temporal instrument">
+    <section className="relative min-w-0 overflow-hidden border-t border-line bg-ink" aria-label="Temporal instrument">
       <div className="absolute top-2 left-4 z-10 flex items-center gap-2">
         <button
           onClick={() => set({ playing: !playing })}

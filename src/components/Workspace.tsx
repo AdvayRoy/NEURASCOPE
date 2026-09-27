@@ -32,7 +32,7 @@ export function Workspace() {
   const badge = SOURCE_BADGE[ontology.source];
 
   return (
-    <div className="grid h-full w-full grid-rows-[44px_minmax(0,1fr)_minmax(176px,21vh)]">
+    <div className="grid h-full w-full grid-cols-[minmax(0,1fr)] grid-rows-[44px_minmax(0,1fr)_minmax(176px,21vh)]">
       <header className="flex items-center gap-5 border-b border-line px-5">
         <button onClick={reset} className="text-[13px] font-light tracking-[0.32em] text-fg hover:text-fg-2" title="New analysis">
           NEURASCOPE
