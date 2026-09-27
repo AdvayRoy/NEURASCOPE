@@ -58,7 +58,7 @@ export function CohortRail() {
         <span className="num w-9 text-right text-[12px] text-fg">{Math.round(sampleAt(run.sim.retention, hz, time) * 100)}%</span>
       </button>
       <div className="relative">
-        <ReviewerStage slots={slots} selected={cohort} />
+        <ReviewerStage slots={slots} />
         <ul className="grid grid-cols-2 gap-1.5">
           {COHORTS.map((c, i) => {
             const on = cohort === i;
@@ -72,7 +72,7 @@ export function CohortRail() {
                   onClick={() => set({ cohort: on ? null : i })}
                   className={`block w-full overflow-hidden rounded-md border text-left transition-colors ${on ? "border-line-2 bg-[#17181b]" : "border-line hover:border-line-2"}`}
                 >
-                  <div ref={slots[i]} className="m-[3px] h-[64px] rounded-[4px]" aria-hidden />
+                  <div ref={slots[i]} className="h-[64px] w-full" aria-hidden />
                   <div className="px-2 pt-1 pb-1.5">
                     <div className="flex items-baseline justify-between gap-1">
                       <span className={`truncate text-[11px] ${on ? "text-fg" : "text-fg-2"}`}>{c.label}</span>

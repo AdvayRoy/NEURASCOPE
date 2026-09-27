@@ -5,7 +5,7 @@ import type { CortexRun } from "@/lib/cortex";
 export interface ReviewerState {
   attention: number;
   survival: number;
-  /** Cohort hazard on a scale shared by all cohorts (multiples of population median hazard), 0..1. */
+  /** Cohort hazard on a scale shared by all cohorts (log-ratio to population median hazard), 0..1. */
   withdrawal: number;
   /** Cohort-weighted novelty + salience, 0..1. */
   orienting: number;
@@ -23,7 +23,7 @@ const smooth = (a: number, b: number, x: number) => {
   return u * u * (3 - 2 * u);
 };
 
-const WITHDRAWAL_SCALE = 3;
+const WITHDRAWAL_RANGE = Math.log(6);
 
 /** Median population hazard, the shared reference for every reviewer's withdrawal. */
 export function hazardReference(run: CortexRun): number {
@@ -50,7 +50,7 @@ export function reviewerState(run: CortexRun, c: number, t: number, hazardRef: n
   return {
     attention: clamp01(sampleAt(run.sim.attentionByCohort[c], hz, t)),
     survival: clamp01(sampleAt(run.sim.retentionByCohort[c], hz, t)),
-    withdrawal: clamp01((h / hazardRef - 1) / WITHDRAWAL_SCALE),
+    withdrawal: clamp01(Math.log(Math.max(1e-6, h / hazardRef)) / WITHDRAWAL_RANGE),
     orienting: clamp01((spec.w.novelty * nov + spec.w.salience * sal) / Math.max(1e-3, spec.w.novelty + spec.w.salience)),
     tension: clamp01((load - spec.capacity) / 0.6),
     fracture,

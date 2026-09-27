@@ -1,6 +1,5 @@
 "use client";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { PerspectiveCamera, View } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -60,32 +59,42 @@ diffuseColor.rgb += rimCol * fr * uRim;`,
   return { material: mat, uniforms };
 }
 
-const SIDE = [1, -1, 1, -1];
+const VIEW_YAW = -0.32;
+const VIEW_PITCH = 0.06;
 
-function Reviewer({ geometry, cohort, selected }: { geometry: THREE.BufferGeometry; cohort: number; selected: boolean }) {
+function Reviewer({ geometry, cohort, slot }: { geometry: THREE.BufferGeometry; cohort: number; slot: RefObject<HTMLDivElement | null> }) {
   const { material, uniforms } = useMemo(() => createReviewerMaterial(), []);
   const gaze = useMemo(() => new THREE.MeshBasicMaterial({ color: "#8fb3ff", transparent: true, opacity: 0, depthWrite: false }), []);
+  const place = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
+  const gl = useThree((s) => s.gl);
   const ray = useRef<THREE.Mesh>(null);
   const run = useLab((s) => s.run);
   const cf = useLab((s) => (s.activeCf ? s.counterfactuals[s.activeCf] : null));
   const src = cf?.run ?? run;
   const base = useMemo(() => (src ? hazardReference(src) : null), [src]);
-  const bg = selected ? "#17181b" : "#0b0c0e";
-
   useFrame((_, dt) => {
     const g = head.current;
-    if (!g || !src || !base) return;
+    const p = place.current;
+    const el = slot.current;
+    if (!g || !p || !el || !src || !base) return;
+    const c = gl.domElement.getBoundingClientRect();
+    const b = el.getBoundingClientRect();
+    p.visible = b.width > 0;
+    p.position.set(b.left + b.width / 2 - (c.left + c.width / 2), c.top + c.height / 2 - (b.top + b.height / 2) - b.height * 0.04, 0);
+    p.scale.setScalar(b.height * 0.92);
     const t = useLab.getState().time;
     const r = reviewerState(src, cohort, t, base);
     const disengage = Math.min(1, 0.6 * r.withdrawal + 0.7 * r.fracture);
     const instability = (1 - r.attention) * 0.05 * Math.sin(t * 1.7 + cohort * 2.1);
-    const yaw = SIDE[cohort] * 0.62 * disengage + instability;
-    const pitch = 0.2 * disengage - 0.12 * r.orienting * r.attention;
+    const yaw = VIEW_YAW - 0.6 * disengage + instability;
+    const pitch = VIEW_PITCH + 0.2 * disengage - 0.12 * r.orienting * r.attention;
     const lean = 0.1 * (r.attention - 0.5) - 0.14 * disengage + 0.03 * r.orienting;
     const a = 1 - Math.exp(-dt * 8);
     g.rotation.y += (yaw - g.rotation.y) * a;
     g.rotation.x += (pitch - g.rotation.x) * a;
+    g.position.y += (-0.04 * lean - g.position.y) * a;
+    g.rotation.z += (-0.08 * disengage - g.rotation.z) * a;
     g.position.z += (lean - g.position.z) * a;
     material.opacity += (0.28 + 0.72 * r.survival - material.opacity) * a;
     uniforms.uRim.value += (0.18 + 0.5 * r.attention * r.survival - uniforms.uRim.value) * a;
@@ -96,24 +105,19 @@ function Reviewer({ geometry, cohort, selected }: { geometry: THREE.BufferGeomet
   });
 
   return (
-    <>
-      <color attach="background" args={[bg]} />
-      <PerspectiveCamera makeDefault position={[0.5, 0.1, 2.7]} fov={20} onUpdate={(c) => c.lookAt(0.1, 0.04, 0)} />
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[2, 2.5, 3]} intensity={1.6} color="#fff8ee" />
-      <directionalLight position={[-3, 1, -2]} intensity={0.9} color="#c9d6ff" />
+    <group ref={place} visible={false}>
       <group ref={head}>
         <mesh geometry={geometry} material={material} />
         <mesh ref={ray} material={gaze} position={[0, 0.1, 0.62]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.004, 0.004, 0.5, 6, 1, true]} />
         </mesh>
       </group>
-    </>
+    </group>
   );
 }
 
-/** One shared WebGL canvas; each reviewer is a scissored Drei View tracking its DOM slot. */
-export function ReviewerStage({ slots, selected }: { slots: RefObject<HTMLDivElement | null>[]; selected: number | null }) {
+/** One shared WebGL canvas and scene; each reviewer head is placed over its DOM slot (orthographic, 1 unit = 1 CSS px). */
+export function ReviewerStage({ slots }: { slots: RefObject<HTMLDivElement | null>[] }) {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -125,17 +129,17 @@ export function ReviewerStage({ slots, selected }: { slots: RefObject<HTMLDivEle
       className="pointer-events-none"
       style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}
       dpr={[1, 2]}
+      orthographic
+      camera={{ position: [0, 0, 400], zoom: 1, near: 1, far: 1000 }}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
       }}
     >
-      {geometry &&
-        slots.map((s, i) => (
-          <View key={i} track={s as RefObject<HTMLElement>}>
-            <Reviewer geometry={geometry} cohort={i} selected={selected === i} />
-          </View>
-        ))}
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[200, 250, 300]} intensity={1.6} color="#fff8ee" />
+      <directionalLight position={[-300, 100, -200]} intensity={0.9} color="#c9d6ff" />
+      {geometry && slots.map((s, i) => <Reviewer key={i} geometry={geometry} cohort={i} slot={s} />)}
     </Canvas>
   );
 }
