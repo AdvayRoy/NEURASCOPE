@@ -91,7 +91,7 @@ class Part:
     """Accumulates geometry + per-vertex bone weights + shape-key positions."""
 
     def __init__(self):
-        self.v, self.f, self.fm, self.w, self.keys = [], [], [], [], {}
+        self.v, self.f, self.fm, self.w, self.keys, self.col = [], [], [], [], {}, []
 
     def add(self, verts, faces, mats, weight, keys=None):
         keys = keys or {}
@@ -439,7 +439,7 @@ class Head:
         for p in self.verts:
             q = p.copy()
             for E in self.eyes.values():
-                dx, dy = q.x - E.x, (q.y - E.y) * 1.08
+                dx, dy = q.x - E.x, (q.y - E.y) / P["eyeV"]
                 d = math.sqrt(dx * dx + dy * dy)
                 if d < 1.5 * r and q.z > E.z - 0.6 * r:
                     zc = E.z + 0.1 * r + 1.6 * r * ss(0.75 * r, 1.5 * r, d)
@@ -468,24 +468,18 @@ class Head:
 
 # ------------------------------------------------------------ face parts
 def build_eye(P, hd, side, eyes_part, face_part, keys_open):
-    r, ex, ey = P["er"], P["ex"], P["ey"]
+    r, ev = P["er"], P["eyeV"]
     E = hd.eyes[side]
     bone = "Eye_L" if side > 0 else "Eye_R"
-    # eyeball, pole forward; ring edges land on pupil / iris borders
-    thetas = [0, 0.16, 0.34, 0.5, 0.64, 0.76, 0.92, 1.15, 1.45, 1.9, 2.5, math.pi]
-    ip, ii = P["pupil"], P["iris"]
-    thetas = [0, ip * 0.5, ip, (ip + ii) / 2, ii, ii + 0.14, 1.0, 1.3, 1.65, 2.2, 2.7, math.pi]
-    v, f = latlong(E, V(0, 0, 1), (r, r, r), thetas, 16)
-    mats = []
-    for fc in f:
-        row = min(fc) // 16
-        mats.append("pupil" if row < 2 else P["mat_iris"] if row < 4 else "sclera")
-    eyes_part.add(v, f, mats, {bone: 1.0})
-    # catchlight
-    hl = E + V(-0.28 * r * side * 0 - 0.3 * r, 0.34 * r, 0) 
-    hl.z = E.z + math.sqrt(max(r * r - (hl.x - E.x) ** 2 - (hl.y - E.y) ** 2, 0)) + 0.0015
-    n = (hl - E).normalized()
-    v, f = latlong(hl, n, (0.002, 0.16 * r, 0.16 * r), [0, 1.2, math.pi / 2, 2.0, math.pi], 8)
+    thetas = [0, 0.35, 0.7, 1.05, 1.4, 1.8, 2.3, 2.75, math.pi]
+    v, f = latlong(E, V(0, 0, 1), (r, r * ev, r), thetas, 14, e1=V(0, 1, 0))
+    eyes_part.add(v, f, "eyeblack", {bone: 1.0})
+    # single catch-light, upper outer
+    cx, cy = -0.32 * r, 0.42 * r * ev
+    cz = math.sqrt(max(1 - (cx / r) ** 2 - (cy / (r * ev)) ** 2, 0)) * r
+    hl = E + V(cx, cy, cz + 0.0012)
+    n = V(cx / r ** 2, cy / (r * ev) ** 2, cz / r ** 2).normalized()
+    v, f = latlong(hl, n, (0.0015, 0.2 * r, 0.2 * r), [0, 1.2, math.pi / 2, 2.0, math.pi], 8)
     eyes_part.add(v, f, "catch", {bone: 1.0})
 
     tilt = math.radians(P["tilt"]) * -side
@@ -500,31 +494,25 @@ def build_eye(P, hd, side, eyes_part, face_part, keys_open):
         def pt(i, j, rad, roll):
             ph = lerp(-ph0, ph0, i / (nph - 1))
             vv = j / (nth - 1)
-            th = lerp(math.radians(8), theta_e, vv) + roll
-            q = V(math.sin(th) * math.sin(ph), ax * math.cos(th), math.sin(th) * math.cos(ph)) * rad
+            th = lerp(math.radians(6), theta_e, vv) + roll
+            q = V(math.sin(th) * math.sin(ph), ax * math.cos(th) * ev, math.sin(th) * math.cos(ph)) * rad
             return E + rot_z(q, tilt)
 
         def Fo(i, j):
-            vv = j / (nth - 1)
-            k = ss(0.7, 1.0, vv)
+            k = ss(0.7, 1.0, j / (nth - 1))
             return pt(i, j, lerp(R, (R + Ri) * 0.5, k * 0.9), math.radians(2.5) * k)
 
         def Fi(i, j):
             return pt(i, j, Ri, 0)
 
-        def mf(kind):
-            if upper and (kind[0] == "e" or (kind[0] == "o" and kind[2] == nth - 2)):
-                return "lash" if P["lash"] else P["mat_lid"]
-            return P["mat_lid"]
-
-        return slab(Fo, Fi, nph, nth, False, mf)
+        return slab(Fo, Fi, nph, nth, False, lambda kind: P["mat_lid"])
 
     tu, tl = math.radians(P["lidU"]), math.radians(P["lidL"])
     vu, fu, mu = lid(tu, True)
     vl, fl, ml = lid(tl, False)
     kb = "blink_L" if side > 0 else "blink_R"
-    ku = {kb: lid(math.radians(104), True)[0], "wide": lid(tu - math.radians(9), True)[0]}
-    kl = {kb: lid(math.radians(79), False)[0], "wide": lid(tl - math.radians(4), False)[0]}
+    ku = {kb: lid(math.radians(104), True)[0], "wide": lid(tu - math.radians(10), True)[0]}
+    kl = {kb: lid(math.radians(79), False)[0], "wide": lid(tl - math.radians(6), False)[0]}
     face_part.add(vu, fu, mu, {"Head": 1.0}, ku)
     face_part.add(vl, fl, ml, {"Head": 1.0}, kl)
     return E
@@ -547,19 +535,19 @@ def build_brows(P, hd, part):
             xs, ys = [], []
             for k in range(n):
                 t = k / (n - 1)
-                x = side * (lerp(ex - 1.05 * r, ex + 1.2 * r, t) + dx * (1 - t))
+                x = side * (lerp(ex - 0.028, ex + 0.036, t) + dx * (1 - t))
                 y = hd.C.y + ey + P["browH"] + P["arch"] * math.sin(math.pi * t ** 0.85) - P["browSlope"] * t + dy + dyi * (1 - t)
                 xs.append(x); ys.append(y)
             return surf_path(hd, xs, ys, 0.0035)
 
-        a = [P["browW"] * (1 - 0.55 * (k / (n - 1)) ** 1.3) for k in range(n)]
-        b = [0.0055 * (1 - 0.4 * k / (n - 1)) for k in range(n)]
+        a = [P["browW"] * (0.75 + 0.25 * math.sin(math.pi * (0.15 + 0.7 * k / (n - 1)))) * (1 - 0.3 * k / (n - 1)) for k in range(n)]
+        b = [0.0065 * (1 - 0.3 * k / (n - 1)) for k in range(n)]
         pts, nr = path(0, 0, 0)
-        v, f = tube(pts, a, b, ring=6, normals=nr)
+        v, f = tube(pts, a, b, ring=8, normals=nr)
         pd, nd = path(-0.011, -0.007, -0.006)
         pu, nu_ = path(0.016, 0.008, 0.0)
-        kd = tube(pd, a, b, ring=6, normals=nd)[0]
-        ku = tube(pu, a, b, ring=6, normals=nu_)[0]
+        kd = tube(pd, a, b, ring=8, normals=nd)[0]
+        ku = tube(pu, a, b, ring=8, normals=nu_)[0]
         part.add(v, f, P["mat_brow"], {"Head": 1.0}, {"browDown": kd, "browUp": ku})
 
 
@@ -570,11 +558,11 @@ def build_mouth(P, hd, part):
     ys = [my + P["mcurve"] * (2 * k / (n - 1) - 1) ** 2 for k in range(n)]
     pts, nr = surf_path(hd, xs, ys, -0.0008)
     prof = [math.sqrt(max(1 - (2 * k / (n - 1) - 1) ** 2, 0)) for k in range(n)]
-    a = [0.0016 + 0.0034 * p for p in prof]
-    b = [0.0028] * n
+    a = [0.0014 + 0.0012 * p for p in prof]
+    b = [0.0024] * n
     v, f = tube(pts, a, b, ring=6, normals=nr)
     po = [p - V(0, 0.0022 * pr, 0) for p, pr in zip(pts, prof)]
-    ao = [0.0016 + 0.0075 * p for p in prof]
+    ao = [0.0014 + 0.0055 * p for p in prof]
     ko = tube(po, ao, b, ring=6, normals=nr)[0]
     part.add(v, f, P["mat_mouth"], {"Head": 1.0}, {"mouthOpen": ko})
 
@@ -585,8 +573,8 @@ def build_ears(P, hd, part):
         o = hd.C + V(0, yl, -0.012)
         d = V(side, 0, 0)
         loc, _ = hd.ray(o + d * 0.8, -d, 0.8)
-        c = loc - d * 0.006 + V(0, 0, 0)
-        ax = rot_y(V(side, 0, 0), side * math.radians(-22))
+        c = loc - d * 0.002
+        ax = rot_y(V(side, 0, 0), side * math.radians(-30))
         thetas = [0, 0.45, 0.9, 1.3, 1.7, 2.2, 2.7, math.pi]
         v, f = latlong(c, ax, (0.024, 0.06, 0.045), thetas, 12, e1=V(0, 1, 0))
         out = []
@@ -601,7 +589,10 @@ def build_ears(P, hd, part):
 
 
 def build_nose_tip(P, hd, part):
-    pass
+    loc, nrm = hd.front(0.0, hd.C.y + P["ny"])
+    c = loc + V(0, 0.002, -0.006)
+    v, f = latlong(c, V(0, 0.25, 1), (P["nbz"], P["nbx"] * 0.9, P["nbx"]), [0, 0.5, 1.0, 1.5, 2.1, 2.7, math.pi], 12)
+    part.add(v, f, P["mat_nose"], {"Head": 1.0})
 
 
 # ----------------------------------------------------------- hair tools
@@ -670,7 +661,8 @@ def curtain(hd, P, beta0, y_top, y_bot, nb, ny, gap, thick, ripple, part, mat, z
             col.append([beta, yl, rr, t])
         rs = smooth_list([c[2] for c in col], 2, wrap=False)
         for c, r2 in zip(col, rs):
-            c[2] = r2
+            rb = body_r(c[0], hd.C.y + c[1], P["shoulder"])
+            c[2] = max(r2, rb + 0.03 if rb > 0 else 0)
         rows.append(col)
 
     def pos(i, j, off):
@@ -696,12 +688,12 @@ def hairline_fn(table):
 # ------------------------------------------------------------ characters
 def base_params():
     return dict(
-        W=0.265, H=0.29, D=0.27, jaw=0.8, jawD=0.88, chin=0.02, chinF=0.02, cheek=0.025, flat=0.12,
+        W=0.255, H=0.29, D=0.27, jaw=0.7, jawD=0.86, chin=0.03, chinF=0.02, cheek=0.034, flat=0.05,
         back=0.04, crown=0.0, temple=0.04, hy=0.635, res=12,
-        er=0.046, ex=0.094, ey=-0.035, eyeIn=1.0, pupil=0.62, iris=1.12, tilt=4, lidU=60, lidL=58, lash=True,
+        er=0.03, eyeV=1.32, ex=0.105, ey=-0.035, eyeIn=0.95, tilt=0, lidU=36, lidL=38, lash=False, nbx=0.024, nbz=0.02,
         sock=0.008, ridge=0.006, nose=0.03, nsx=0.03, nsy=0.024, ny=-0.108, muzzle=0.008, chinBall=0.005,
-        cheekPuff=0.006, mw=0.036, my=-0.168, mcurve=0.0015,
-        browH=0.078, arch=0.009, browSlope=0.006, browW=0.0085, shoulder=1.0, neck=0.066,
+        cheekPuff=0.014, mw=0.03, my=-0.172, mcurve=0.0075,
+        browH=0.072, arch=0.006, browSlope=0.004, browW=0.011, shoulder=1.0, neck=0.066,
     )
 
 
@@ -718,43 +710,41 @@ def char(cid):
 @char("cold")
 def cold():
     P = base_params()
-    P.update(W=0.265, H=0.282, jaw=0.9, cheek=0.034, chin=0.012, er=0.047, ex=0.095, tilt=3)
-    P["colors"] = dict(skin=(0.90, 0.58, 0.38), hair=(0.40, 0.22, 0.11), hair2=(0.30, 0.17, 0.09), cloth=(0.13, 0.16, 0.26),
-                       iris=(0.09, 0.055, 0.04), brow=(0.26, 0.15, 0.08), mouth=(0.55, 0.28, 0.24), string=(0.80, 0.80, 0.82))
+    P.update(W=0.258, H=0.285, jaw=0.74, cheek=0.036)
+    P["colors"] = dict(skin=(0.93, 0.62, 0.42), hair=(0.42, 0.23, 0.12), hair2=(0.33, 0.18, 0.09), cloth=(0.15, 0.17, 0.27),
+                       brow=(0.22, 0.12, 0.07), mouth=(0.45, 0.22, 0.18), string=(0.80, 0.80, 0.82))
     return P
 
 
 @char("intent")
 def intent():
     P = base_params()
-    P.update(W=0.252, H=0.295, D=0.262, jaw=0.8, jawD=0.86, chin=0.026, chinF=0.012, cheek=0.036, temple=0.02,
-             er=0.048, ex=0.093, lidU=58, lidL=58, tilt=2, nose=0.024, nsx=0.026, mw=0.03, mcurve=0.0018, shoulder=0.88,
-             browW=0.007, arch=0.011, neck=0.058, cheekPuff=0.008)
-    P["colors"] = dict(skin=(0.90, 0.60, 0.42), hair=(0.14, 0.09, 0.08), hair2=(0.10, 0.07, 0.06), cloth=(0.93, 0.45, 0.66),
-                       iris=(0.09, 0.055, 0.04), brow=(0.14, 0.09, 0.07), mouth=(0.66, 0.32, 0.32), gold=(0.86, 0.64, 0.24))
+    P.update(W=0.248, H=0.292, D=0.262, jaw=0.68, jawD=0.84, chin=0.034, chinF=0.014, cheek=0.04, temple=0.02,
+             nbx=0.021, nbz=0.017, mw=0.027, shoulder=0.88, browW=0.0095, arch=0.008, neck=0.058, ex=0.1)
+    P["colors"] = dict(skin=(0.95, 0.66, 0.48), hair=(0.17, 0.10, 0.09), hair2=(0.12, 0.07, 0.06), cloth=(0.93, 0.45, 0.66),
+                       brow=(0.14, 0.09, 0.07), mouth=(0.55, 0.24, 0.24), gold=(0.86, 0.64, 0.24))
     return P
 
 
 @char("visual")
 def visual():
     P = base_params()
-    P.update(W=0.275, H=0.28, D=0.272, jaw=0.9, jawD=0.9, chin=0.012, cheek=0.02, flat=0.14, er=0.046, ex=0.098,
-             lidU=62, lidL=58, tilt=5, nose=0.03, nsx=0.034, nsy=0.024, mw=0.034, browW=0.009, arch=0.006, browSlope=0.002)
-    P["colors"] = dict(skin=(0.62, 0.38, 0.24), hair=(0.10, 0.07, 0.06), hair2=(0.08, 0.06, 0.05), cloth=(0.46, 0.30, 0.80),
-                       iris=(0.09, 0.055, 0.04), brow=(0.09, 0.06, 0.05), mouth=(0.36, 0.18, 0.15), cap=(0.40, 0.28, 0.86),
-                       frame=(0.93, 0.89, 0.80), string=(0.93, 0.89, 0.80))
+    P.update(W=0.262, H=0.282, D=0.272, jaw=0.76, jawD=0.88, chin=0.022, cheek=0.03, nbx=0.026, nbz=0.021,
+             browW=0.0115, browSlope=0.002, ex=0.108)
+    P["colors"] = dict(skin=(0.66, 0.40, 0.25), hair=(0.10, 0.07, 0.06), hair2=(0.08, 0.06, 0.05), cloth=(0.48, 0.30, 0.82),
+                       brow=(0.08, 0.05, 0.04), mouth=(0.30, 0.14, 0.11), cap=(0.40, 0.28, 0.86),
+                       frame=(0.95, 0.91, 0.82), string=(0.95, 0.91, 0.82))
     return P
 
 
 @char("enthusiast")
 def enthusiast():
     P = base_params()
-    P.update(W=0.262, H=0.305, D=0.275, jaw=0.9, jawD=0.9, chin=0.024, chinF=0.018, cheek=0.02, er=0.045, ex=0.095,
-             lidU=62, lidL=58, tilt=4, nose=0.034, nsy=0.028, ny=-0.112, mw=0.032, browW=0.0105, browH=0.074,
-             arch=0.005, browSlope=0.003, shoulder=1.06, neck=0.07, lash=True)
-    P["colors"] = dict(skin=(0.82, 0.54, 0.35), hair=(0.15, 0.10, 0.08), hair2=(0.15, 0.10, 0.08), cloth=(0.95, 0.94, 0.91),
-                       iris=(0.09, 0.055, 0.04), brow=(0.10, 0.07, 0.06), mouth=(0.48, 0.25, 0.22), ghutra=(0.97, 0.96, 0.94),
-                       agal=(0.06, 0.06, 0.07))
+    P.update(W=0.258, H=0.3, D=0.275, jaw=0.76, jawD=0.88, chin=0.026, chinF=0.018, nbx=0.027, nbz=0.022,
+             ny=-0.112, browW=0.0125, browH=0.07, arch=0.004, shoulder=1.04, neck=0.068)
+    P["colors"] = dict(skin=(0.84, 0.54, 0.35), hair=(0.12, 0.08, 0.07), hair2=(0.12, 0.08, 0.07), cloth=(0.96, 0.95, 0.92),
+                       brow=(0.10, 0.07, 0.06), mouth=(0.40, 0.20, 0.17), ghutra=(0.97, 0.96, 0.93),
+                       agal=(0.05, 0.05, 0.06))
     return P
 
 
@@ -762,7 +752,7 @@ def enthusiast():
 MATS = {}
 
 
-def material(name, color, rough=0.7, emit=None):
+def material(name, color, rough=0.7, emit=None, vcol=False):
     if name in MATS:
         return MATS[name]
     m = bpy.data.materials.new(name)
@@ -775,6 +765,17 @@ def material(name, color, rough=0.7, emit=None):
     if emit:
         bsdf.inputs["Emission Color"].default_value = (*srgb(emit), 1.0)
         bsdf.inputs["Emission Strength"].default_value = 1.0
+    if vcol:
+        nt = m.node_tree
+        ca = nt.nodes.new("ShaderNodeVertexColor")
+        ca.layer_name = "Color"
+        mix = nt.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.blend_type = "MULTIPLY"
+        mix.inputs["Factor"].default_value = 1.0
+        mix.inputs[6].default_value = (*lin, 1.0)
+        nt.links.new(ca.outputs["Color"], mix.inputs[7])
+        nt.links.new(mix.outputs[2], bsdf.inputs["Base Color"])
     m.diffuse_color = (*lin, 1.0)
     MATS[name] = m
     return m
@@ -799,6 +800,10 @@ def make_object(name, part, arm, bones):
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.to_mesh(me)
     bm.free()
+    if part.col:
+        ca = me.color_attributes.new("Color", "FLOAT_COLOR", "POINT")
+        for i, c in enumerate(part.col):
+            ca.data[i].color = c
     ob = bpy.data.objects.new(name, me)
     bpy.context.collection.objects.link(ob)
     groups = {b: ob.vertex_groups.new(name=b) for b in bones}
@@ -844,9 +849,10 @@ def build_character(cid):
     P = CHARS[cid]()
     col = P["colors"]
     pre = cid + "_"
-    P["mat_skin"] = pre + "skin"; material(P["mat_skin"], col["skin"], 0.62)
+    P["mat_skin"] = pre + "skin"; material(P["mat_skin"], col["skin"], 0.75, vcol=True)
+    P["mat_neck"] = pre + "neck"; material(P["mat_neck"], col["skin"], 0.75)
     P["mat_lid"] = P["mat_skin"]
-    P["mat_iris"] = pre + "iris"; material(P["mat_iris"], col["iris"], 0.5)
+    P["mat_nose"] = pre + "nose"; material(P["mat_nose"], tuple(min(1, c * k) for c, k in zip(col["skin"], (1.02, 0.93, 0.9))), 0.75)
     P["mat_brow"] = pre + "brow"; material(P["mat_brow"], col["brow"], 0.8)
     P["mat_mouth"] = pre + "mouth"; material(P["mat_mouth"], col["mouth"], 0.6)
     P["mat_hair"] = pre + "hair"; material(P["mat_hair"], col["hair"], 0.62)
@@ -854,8 +860,7 @@ def build_character(cid):
     P["mat_cloth"] = pre + "cloth"; material(P["mat_cloth"], col["cloth"], 0.85)
     if "string" in col:
         P["mat_string"] = pre + "string"; material(P["mat_string"], col["string"], 0.8)
-    material("sclera", (0.95, 0.94, 0.92), 0.5)
-    material("pupil", (0.03, 0.02, 0.02), 0.5)
+    material("eyeblack", (0.045, 0.032, 0.03), 0.55)
     material("lash", (0.10, 0.07, 0.06), 0.7)
     material("catch", (1, 1, 1), 0.5, emit=(1, 1, 1))
 
@@ -870,12 +875,19 @@ def build_character(cid):
     build_brows(P, hd, face)
     build_mouth(P, hd, face)
     build_ears(P, hd, face)
+    build_nose_tip(P, hd, face)
     build_bust(P, body, P["mat_cloth"])
-    build_neck(P, body, P["mat_skin"])
+    build_neck(P, body, P["mat_neck"])
     STYLE[cid](P, hd, hair, body, face)
 
     arm = make_armature(cid, {"Eye_L": E_L, "Eye_R": E_R})
     bones = ["Chest", "Neck", "Head", "Eye_L", "Eye_R"]
+    for p in face.v:
+        q = p - hd.C
+        k = 0.0
+        if q.z > 0.05:
+            k = math.exp(-((abs(q.x) - P["ex"] * 1.12) / 0.045) ** 2 - ((q.y - (P["ey"] - 0.07)) / 0.03) ** 2)
+        face.col.append((1.0, lerp(1.0, 0.86, k), lerp(1.0, 0.84, k), 1.0))
     objs = [make_object(pre + "face", face, arm, bones), make_object(pre + "eyes", eyes, arm, bones),
             make_object(pre + "hair", hair, arm, bones), make_object(pre + "body", body, arm, bones)]
     tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in objs)
@@ -896,120 +908,121 @@ def style(cid):
 
 @style("cold")
 def style_cold(P, hd, hair, body, face):
-    r, ey = P["er"], P["ey"]
-    hl = hairline_fn([(0, ey + 2.35 * r), (30, ey + 2.2 * r), (58, ey + 1.1 * r), (72, ey + 0.1 * r), (82, ey + 0.2 * r),
-                      (100, ey + 1.0 * r), (118, ey - 0.4 * r), (145, -0.15), (180, -0.17)])
-
-    def covered(p, d):
-        return p.y > hl(p) and not (abs(p.x) > 0.2 and p.y < ey + 0.3 * r and p.z < -0.02 and p.z > -0.1 and False)
-
-    def H(ph, v, d, p):
-        lump = 0.006 * math.sin(7 * ph + 1.3) * math.sin(5 * v * 3.1)
-        return 0.04 + 0.07 * ss(0.95, 0.1, v) + lump
+    ey = P["ey"]
+    hl = hairline_fn([(0, ey + 0.135), (30, ey + 0.125), (58, ey + 0.07), (74, ey + 0.02), (84, ey + 0.035),
+                      (100, ey + 0.05), (118, ey - 0.02), (145, -0.15), (180, -0.17)])
 
     pole = V(0, 0.9, -0.42)
-    dirf, phis, tmax = cap(hd, pole, covered, H, 24, 7, hair, P["mat_hair"])
-    rnd = random.Random(7)
     c = pole.normalized()
-    rows = [(0.0, 1), (0.22, 7), (0.43, 11), (0.63, 14), (0.81, 15), (0.96, 10)]
-    nt = 7
-    for frac, cnt in rows:
-        for k in range(cnt):
-            ph = TAU * (k + 0.5 * (frac * 10 % 2)) / cnt + rnd.uniform(-0.15, 0.15)
-            i = int(round(ph / TAU * len(phis))) % len(phis)
-            front = math.cos(ph)
-            if frac > 0.9 and front < 0.3:
-                continue
-            th = tmax[i] * min(frac + rnd.uniform(-0.03, 0.03), 0.98)
-            d = dirf(ph, th)
-            p = hd.S(d)
-            n = p.normalized()
-            hgt = H(ph, frac, d, p)
-            ctr = hd.C + p + n * (hgt * 0.8)
-            # tangent: downhill from crown, twisted
-            down = (dirf(ph, th + 0.1) - d)
-            down = (down - n * down.dot(n)).normalized() if down.length > 1e-6 else n.orthogonal().normalized()
-            side = n.cross(down)
-            tw = rnd.uniform(-0.9, 0.9)
-            t_dir = (down * math.cos(tw) + side * math.sin(tw)).normalized()
-            lay = 0.55 if frac < 0.9 else 0.25
-            up = (n * lay + n.cross(t_dir) * (1 - lay)).normalized()
-            Rc = rnd.uniform(0.022, 0.028) * (0.85 if frac > 0.9 else 1.0)
-            a0 = rnd.uniform(-2.4, -1.8)
-            sweep = rnd.uniform(4.2, 4.8)
-            pts, A, Bv, nrs = [], [], [], []
-            for q in range(nt):
-                t = q / (nt - 1)
-                a = a0 + sweep * t
-                rad = Rc * (1 - 0.35 * t)
-                pts.append(ctr + (t_dir * math.cos(a) + up * math.sin(a)) * rad)
-                w = lerp(0.03, 0.017, t ** 1.2) * (0.85 if frac > 0.9 else 1)
-                A.append(w); Bv.append(w * 0.85)
-                nrs.append(-(t_dir * math.cos(a) + up * math.sin(a)))
-            v, f = tube(pts, A, Bv, ring=5, normals=nrs)
-            hair.add(v, f, P["mat_hair"] if rnd.random() < 0.55 else P["mat_hair2"], {"Head": 1.0})
+    e1 = (V(0, 0, 1) - c * c.z).normalized()
+    e2 = c.cross(e1)
+
+    def cdir(az, th):
+        ph = math.radians(az)
+        return (c * math.cos(th) + (e1 * math.cos(ph) + e2 * math.sin(ph)) * math.sin(th)).normalized()
+
+    # big curl clumps: (azimuth, polar angle from crown, amplitude)
+    clumps = [(0, 0.0, 0.075), (25, 0.6, 0.08), (100, 0.58, 0.075), (170, 0.62, 0.065), (240, 0.58, 0.075), (310, 0.6, 0.08),
+              (-20, 1.15, 0.07), (45, 1.12, 0.075), (80, 1.38, 0.06), (130, 1.2, 0.06), (200, 1.2, 0.06), (262, 1.38, 0.06),
+              (295, 1.12, 0.075), (15, 1.55, 0.05), (340, 1.5, 0.055)]
+    cd = [(cdir(az, th), amp) for az, th, amp in clumps]
+
+    def H(ph, v, d, p):
+        h = 0.02
+        for dk, amp in cd:
+            a = d.angle(dk)
+            h = max(h, 0.02 + amp * max(1 - (a / 0.34) ** 2, 0) ** 0.6)
+        return h + 0.004 * math.sin(9 * ph)
+
+    dirf, phis, tmax = cap(hd, pole, lambda p, d: p.y > hl(p), H, 40, 13, hair, P["mat_hair"], edge_keep=0.55)
+    rnd = random.Random(5)
+    nt = 9
+    for dk, amp in cd:
+        p = hd.S(dk)
+        n = p.normalized()
+        ctr = hd.C + p + n * (0.02 + amp * 0.9)
+        t_dir = (V(0, -1, 0) - n * n.y)
+        t_dir = t_dir.normalized() if t_dir.length > 1e-4 else V(0, 0, 1)
+        tw = rnd.uniform(-1.2, 1.2)
+        side = n.cross(t_dir)
+        t_dir = (t_dir * math.cos(tw) + side * math.sin(tw)).normalized()
+        up = n.cross(t_dir).normalized()
+        Rc = 0.026 + amp * 0.2
+        a0 = rnd.uniform(0, TAU)
+        pts, A, Bv, nrs = [], [], [], []
+        for q in range(nt):
+            t = q / (nt - 1)
+            a = a0 + 3.0 * t
+            rad = Rc * (1 - 0.55 * t)
+            dirv = t_dir * math.cos(a) + up * math.sin(a)
+            pts.append(ctr + dirv * rad + n * (0.006 * (1 - t)))
+            w = lerp(0.026, 0.013, t)
+            A.append(w); Bv.append(w * 0.9)
+            nrs.append(n)
+        v, f = tube(pts, A, Bv, ring=6, normals=nrs)
+        hair.add(v, f, P["mat_hair2"], {"Head": 1.0})
     build_hood(P, body, P["mat_cloth"])
 
 
 @style("intent")
 def style_intent(P, hd, hair, body, face):
-    r, ey = P["er"], P["ey"]
-    hl = hairline_fn([(0, ey + 2.7 * r), (12, ey + 2.35 * r), (35, ey + 1.7 * r), (55, ey + 0.4 * r), (80, ey - 0.6 * r),
+    ey = P["ey"]
+    hl = hairline_fn([(0, ey + 0.15), (20, ey + 0.14), (45, ey + 0.1), (65, ey + 0.035), (85, ey - 0.03),
                       (120, -0.1), (180, -0.12)])
-
-    def covered(p, d):
-        return p.y > hl(p)
+    ph_p = 0.45
 
     def H(ph, v, d, p):
-        part = 1 - 0.7 * math.exp(-((math.atan2(math.sin(ph), math.cos(ph))) / 0.16) ** 2) * ss(0.2, 0.0, 0) * 1
-        part = 1 - 0.55 * math.exp(-(math.atan2(math.sin(ph), math.cos(ph)) / 0.13) ** 2) * ss(1.0, 0.3, v)
-        groove = 1 - 0.18 * abs(math.sin(9 * ph)) ** 3 * ss(0.3, 0.9, v)
-        return (0.036 + 0.018 * ss(0.8, 0.3, v)) * part * groove
+        dp = math.atan2(math.sin(ph - ph_p), math.cos(ph - ph_p))
+        part = 1 - 0.6 * math.exp(-(dp / 0.1) ** 2) * ss(1.0, 0.25, v)
+        vol = 1 + 0.5 * ss(0.3, -1.2, dp) * ss(0.1, 0.8, v)
+        return (0.03 + 0.02 * ss(0.85, 0.3, v)) * part * vol
 
-    cap(hd, V(0, 1.0, -0.35), covered, H, 36, 9, hair, P["mat_hair"], edge_keep=0.55)
+    def covered(p, d):
+        dip = 0.065 * math.exp(-((p.x + 0.12) / 0.08) ** 2) * ss(0.0, 0.1, p.z)
+        return p.y > hl(p) - dip
 
+    cap(hd, V(0, 1.0, -0.35), covered, H, 32, 10, hair, P["mat_hair"], edge_keep=0.75)
     def beta0(yl):
-        return math.radians(lerp(52, 76, ss(ey + 1.5 * r, ey - 1.5 * r, yl)) - 8 * ss(-0.2, -0.38, yl))
+        return math.radians(lerp(38, 74, ss(ey + 0.12, ey - 0.03, yl)) - 18 * ss(-0.22, -0.42, yl))
 
     def ybot(beta):
-        return 0.245 - hd.C.y + 0.012 * abs(math.sin(4.5 * beta))
+        return 0.165 - hd.C.y + 0.014 * abs(math.sin(4.5 * beta))
 
     def gap(beta, t):
-        return 0.014 + 0.024 * ss(0.0, 0.5, t)
+        return 0.012 + 0.024 * ss(0.0, 0.5, t)
 
     def ripple(beta, t):
         return 0.008 * math.sin(11 * beta) * ss(0.2, 1.0, t)
 
-    curtain(hd, P, beta0, ey + 1.9 * r, ybot, 34, 12, gap, 0.028, ripple, hair, P["mat_hair"])
-    # gold hoops
-    gold = P.get("mat_gold") or (P.__setitem__("mat_gold", "intent_gold") or "intent_gold")
-    material(gold, P["colors"]["gold"], 0.45)
+    curtain(hd, P, beta0, ey + 0.13, ybot, 34, 13, gap, 0.028, ripple, hair, P["mat_hair"])
+    gold = "intent_gold"
+    material(gold, P["colors"]["gold"], 0.5)
     for side in (-1, 1):
-        yl = ey - 0.105
+        yl = ey - 0.1
         o = hd.C + V(0, yl, 0.0)
         d = V(side, 0, 0.35).normalized()
         loc, _ = hd.ray(o + d * 0.8, -d, 0.8)
-        ctr = loc + d * 0.018 + V(0, -0.028, 0)
+        ctr = loc + d * 0.02 + V(0, -0.03, 0)
         ns = 20
         nrm = rot_y(V(side, 0, 0), side * math.radians(-55))
         e_up = V(0, 1, 0)
         e_s = nrm.cross(e_up).normalized()
-        pts = [ctr + (e_up * math.cos(TAU * k / ns) + e_s * math.sin(TAU * k / ns)) * 0.024 for k in range(ns)]
+        pts = [ctr + (e_up * math.cos(TAU * k / ns) + e_s * math.sin(TAU * k / ns)) * 0.026 for k in range(ns)]
         nr = [(p - ctr).normalized() for p in pts]
-        v, f = tube(pts, [0.0045] * ns, [0.0045] * ns, ring=6, normals=nr, closed=True)
+        v, f = tube(pts, [0.005] * ns, [0.005] * ns, ring=6, normals=nr, closed=True)
         hair.add(v, f, gold, {"Head": 1.0})
     build_crew(P, body, P["mat_cloth"])
 
 
 @style("visual")
 def style_visual(P, hd, hair, body, face):
-    r, ey = P["er"], P["ey"]
+    r, ey = 0.046, P["ey"]
     # short hair visible under the cap
     hl = hairline_fn([(0, ey + 2.3 * r), (55, ey + 1.3 * r), (72, ey + 0.0 * r), (84, ey + 0.1 * r), (100, ey + 1.0 * r),
                       (120, ey - 0.4 * r), (150, -0.15), (180, -0.17)])
     cap(hd, V(0, 1, -0.2), lambda p, d: p.y > hl(p), lambda ph, v, d, p: 0.012, 26, 7, hair, P["mat_hair"], edge_keep=0.7)
     # baseball cap
-    band_f, band_b = ey + 2.05 * r, -0.03
+    band_f, band_b = ey + 0.145, 0.0
 
     def band(p):
         b = math.atan2(p.x, p.z)
@@ -1028,7 +1041,7 @@ def style_visual(P, hd, hair, body, face):
     v, f = latlong(top, V(0, 1, 0.08), (0.008, 0.016, 0.016), [0, 0.8, 1.5, 2.2, math.pi], 10)
     hair.add(v, f, mat_cap, {"Head": 1.0})
     # brim
-    yaw = math.radians(-14)
+    yaw = math.radians(-24)
     bmax = math.radians(78)
     nu, nv = 17, 5
 
@@ -1048,7 +1061,7 @@ def style_visual(P, hd, hair, body, face):
     # round glasses
     mat_fr = "visual_frame"
     material(mat_fr, P["colors"]["frame"], 0.55)
-    R = 0.074
+    R = 0.084
     zf = None
     ctrs = []
     for side in (-1, 1):
@@ -1059,7 +1072,7 @@ def style_visual(P, hd, hair, body, face):
         pts = [c + V(math.cos(TAU * k / ns), math.sin(TAU * k / ns), 0) * R for k in range(ns)]
         pts = [p + V(0, 0, -0.012 * ((p.x - c.x) * (1 if c.x > 0 else -1) / R + 1) / 2) for p in pts]
         nr = [(p - c).normalized() for p in pts]
-        v, f = tube(pts, [0.006] * ns, [0.0105] * ns, ring=8, normals=nr, closed=True)
+        v, f = tube(pts, [0.0065] * ns, [0.011] * ns, ring=8, normals=nr, closed=True)
         hair.add(v, f, mat_fr, {"Head": 1.0})
     bp = [V(lerp(ctrs[0].x + R * 0.98, ctrs[1].x - R * 0.98, t / 6), ctrs[0].y + 0.012 * math.sin(math.pi * t / 6) + 0.006, zf + 0.004) for t in range(7)]
     v, f = tube(bp, [0.0065] * 7, [0.006] * 7, ring=6, up=V(0, 0, 1))
@@ -1084,77 +1097,117 @@ def style_visual(P, hd, hair, body, face):
 
 @style("enthusiast")
 def style_enthusiast(P, hd, hair, body, face):
-    r, ey, W = P["er"], P["ey"], P["W"]
+    ey, W = P["ey"], P["W"]
     mat_g = "enthusiast_ghutra"
     material(mat_g, P["colors"]["ghutra"], 0.85)
-    fy = ey + 2.15 * r
+    fy = ey + 0.105
 
     def face_open(p):
-        # oval opening that frames brows, cheeks and beard
-        fx = W * lerp(0.7, 0.6, ss(ey, -0.28, p.y))
+        fx = W * lerp(0.72, 0.62, ss(ey, -0.28, p.y))
         return p.y < fy and abs(p.x) < fx and p.z > 0.02
 
-    cap(hd, V(0, 1, -0.1), lambda p, d: (not face_open(p)) and p.y > -0.12, lambda ph, v, d, p: 0.034 + 0.01 * ss(0.4, 0, v),
-        32, 9, hair, mat_g, edge_keep=0.85, tmax_cap=math.pi * 0.62)
+    cap(hd, V(0, 1, -0.1), lambda p, d: (not face_open(p)) and p.y > -0.3, lambda ph, v, d, p: 0.03 + 0.012 * ss(0.4, 0, v),
+        32, 10, hair, mat_g, edge_keep=0.9, tmax_cap=math.pi * 0.8, inner=0.004)
 
     def beta0(yl):
-        return math.radians(lerp(50, 58, ss(fy, ey - 0.1, yl)) - 6 * ss(-0.25, -0.5, yl))
+        return math.radians(lerp(40, 47, ss(fy, ey - 0.1, yl)) - 27 * ss(-0.25, -0.36, yl))
 
     def ybot(beta):
         front = (1 + math.cos(beta)) / 2
-        return lerp(0.02, 0.06, front) - hd.C.y
+        return lerp(0.03, 0.05, front) - hd.C.y
 
     def gap(beta, t):
-        return 0.018 + 0.04 * t
+        return 0.004 + 0.03 * ss(0.25, 1.0, t)
 
     def ripple(beta, t):
-        return 0.012 * math.sin(8 * beta + 0.5) * ss(0.25, 1.0, t)
+        return (0.012 * math.sin(7 * beta + 0.5) + 0.006 * math.sin(13 * beta)) * ss(0.3, 1.0, t)
 
-    curtain(hd, P, beta0, fy - 0.01, ybot, 36, 12, gap, 0.02, ripple, hair, mat_g)
-    # agal: two black cords
+    curtain(hd, P, beta0, fy - 0.01, ybot, 36, 12, gap, 0.012, ripple, hair, mat_g)
     mat_a = "enthusiast_agal"
     material(mat_a, P["colors"]["agal"], 0.6)
-    for k, dy in enumerate((0.0, 0.03)):
+    for dy in (0.0, 0.03):
         ns = 32
         pts, nr = [], []
         for q in range(ns):
             b = TAU * q / ns
-            yl = fy + 0.035 + dy + 0.02 * (1 - math.cos(b)) / 2
-            rr = hd.radius_at(b, yl) + 0.045
+            yl = fy + 0.03 + dy + 0.02 * (1 - math.cos(b)) / 2
+            rr = hd.radius_at(b, yl) + 0.042
             d = V(math.sin(b), 0, math.cos(b))
             pts.append(hd.C + V(0, yl, 0) + d * rr)
             nr.append(d)
-        v, f = tube(pts, [0.0155] * ns, [0.0135] * ns, ring=6, normals=nr, closed=True)
+        v, f = tube(pts, [0.0145] * ns, [0.0125] * ns, ring=6, normals=nr, closed=True)
         hair.add(v, f, mat_a, {"Head": 1.0})
-    # beard + moustache: offset shell of the face skin inside a mask
-    mat_b = P["mat_hair"]
-    mw, my, ny = P["mw"], P["my"], P["ny"]
+    build_beard(P, hd, hair)
+    # inner wrap of the ghutra under the chin
+    ys = [lerp(0.27, hd.C.y - 0.22, k / 5) for k in range(6)]
+    pts = [V(0, y, 0.0) for y in ys]
+    aw = [lerp(0.15, 0.12, k / 5) for k in range(6)]
+    bw = [lerp(0.16, 0.13, k / 5) for k in range(6)]
+    v, f = tube(pts, aw, bw, ring=12, normals=[V(0, 0, 1)] * 6)
+    hair.add(v, f, mat_g, {"Head": 1.0})
+    build_crew(P, body, P["mat_cloth"])
 
-    def mask(p):
-        ax = abs(p.x)
-        jaw_line = lerp(ey - 1.5 * r, ey - 3.2 * r, ss(W * 0.85, P["ex"] * 0.7, ax))
-        inside = (jaw_line - p.y) / 0.02
-        mo = ((p.x / (mw + 0.004)) ** 2 + ((p.y - my + 0.002) / 0.010) ** 2) - 1
-        stache = (1 - ((p.x / (mw + 0.016)) ** 2 + ((p.y - (my + 0.022)) / 0.009) ** 2))
-        m = min(inside, 1.0)
-        m = max(m, stache * 3)
-        m = min(m, mo * 4)
-        m = min(m, (p.y - (-0.33)) / 0.01, (p.z + 0.02) / 0.02)
-        return m
 
-    bv, keep = [], []
-    for p in hd.verts:
-        q = p - hd.C
-        m = mask(q)
-        h = 0.012 * ss(-0.1, 1.0, m) - 0.004
-        nrm = q.normalized()
-        bv.append(p + nrm * h)
-        keep.append(m > -0.6)
-    bf = [f for f in hd.faces if any(keep[i] for i in f)]
-    used = sorted({i for f in bf for i in f})
-    remap = {o: n for n, o in enumerate(used)}
-    hair.add([bv[i] for i in used], [tuple(remap[i] for i in f) for f in bf], mat_b, {"Head": 1.0})
-    build_kandura_collar(P, body, P["mat_cloth"])
+def build_beard(P, hd, part):
+    """Short full beard as a smooth shell projected onto the jaw, plus a moustache."""
+    ey, my, mw = P["ey"], P["my"], P["mw"]
+    O = hd.C + V(0, -0.06, -0.06)
+
+    def hit(beta, e):
+        d = V(math.sin(beta) * math.cos(e), math.sin(e), math.cos(beta) * math.cos(e))
+        loc, nrm = hd.ray(O + d * 0.9, -d, 0.9)
+        return loc, nrm
+
+    def e_for_y(beta, y):
+        lo, hi = math.radians(-80), math.radians(60)
+        for _ in range(22):
+            mid = (lo + hi) / 2
+            loc, _ = hit(beta, mid)
+            if loc is None or loc.y - hd.C.y > y:
+                hi = mid
+            else:
+                lo = mid
+        return (lo + hi) / 2
+
+    nu, nv = 27, 9
+    bmax = math.radians(88)
+    rows = []
+    for i in range(nu):
+        s = lerp(-1, 1, i / (nu - 1))
+        beta = s * bmax
+        a = abs(s)
+        # top edge: under the lip at centre, up around the mouth corners, along the cheek to the sideburn
+        ytop = my - 0.024 + 0.055 * ss(0.08, 0.3, a) - 0.004 * ss(0.3, 0.55, a) + 0.1 * ss(0.5, 1.0, a) ** 1.4
+        e0 = e_for_y(beta, ytop)
+        e1 = math.radians(-72) + math.radians(20) * a ** 2
+        col = []
+        for j in range(nv):
+            t = j / (nv - 1)
+            e = lerp(e0, e1, t)
+            loc, nrm = hit(beta, e)
+            col.append((loc, nrm, t, a))
+        rows.append(col)
+
+    def thick(t, a):
+        return 0.013 * ss(0.0, 0.3, t) * (1 - 0.35 * a ** 3) + 0.001
+
+    def Fo(i, j):
+        loc, nrm, t, a = rows[i][j]
+        return loc + nrm * thick(t, a)
+
+    def Fi(i, j):
+        loc, nrm, t, a = rows[i][j]
+        return loc - nrm * 0.003
+
+    v, f, m = slab(Fo, Fi, nu, nv, False, lambda k: P["mat_hair"])
+    part.add(v, f, m, {"Head": 1.0})
+    n = 11
+    xs = [lerp(-mw - 0.016, mw + 0.016, k / (n - 1)) for k in range(n)]
+    ys = [hd.C.y + my + 0.019 - 0.006 * (2 * k / (n - 1) - 1) ** 2 for k in range(n)]
+    pts, nr = surf_path(hd, xs, ys, 0.004)
+    prof = [math.sin(math.pi * (0.08 + 0.84 * k / (n - 1))) for k in range(n)]
+    v, f = tube(pts, [0.0035 + 0.0075 * p for p in prof], [0.004 + 0.003 * p for p in prof], ring=8, normals=nr)
+    part.add(v, f, P["mat_hair"], {"Head": 1.0})
 
 
 # ------------------------------------------------------------------ main
