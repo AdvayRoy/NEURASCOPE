@@ -51,7 +51,7 @@ export function CohortRail() {
           return (
             <li key={r.label}>
               <button
-                onClick={() => set({ cohort: r.idx })}
+                data-testid={r.idx === null ? "reviewer-all" : `reviewer-${COHORTS[r.idx].id}`} onClick={() => set({ cohort: r.idx })}
                 className={`flex w-full items-center gap-3 rounded-md px-2 py-[5px] text-left transition-colors ${on ? "bg-fg/[0.06]" : "hover:bg-fg/[0.03]"}`}
               >
                 <div className="min-w-0 flex-1">

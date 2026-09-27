@@ -143,7 +143,7 @@ function StateView() {
           <ul className="space-y-1">
             {run.fractures.map((f, i) => (
               <li key={f.id}>
-                <button onClick={() => select(f.id)} className="flex w-full items-center gap-3 rounded px-1.5 py-1 text-left text-[12px] hover:bg-fg/[0.04]">
+                <button data-testid="fracture-item" onClick={() => select(f.id)} className="flex w-full items-center gap-3 rounded px-1.5 py-1 text-left text-[12px] hover:bg-fg/[0.04]">
                   <span className="font-mono text-[10px] text-fracture">{f.id}</span>
                   <span className="num text-fg-2">{f.start.toFixed(1)} s</span>
                   <span className="flex-1 truncate text-fg-3">{f.drivers.map((x) => x.label.toLowerCase()).join(" · ")}</span>
