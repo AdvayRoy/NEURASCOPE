@@ -4,6 +4,7 @@ import { COHORTS } from "@/lib/cortex/params";
 import { sampleAt } from "@/lib/cortex/simulate";
 import { simulatePatch } from "@/lib/state/pipeline";
 import { useLab } from "@/lib/state/store";
+import type { EvidenceTier } from "@/lib/evidence/provenance";
 import { Tier } from "./Tier";
 
 function FractureView() {
@@ -66,7 +67,7 @@ function FractureView() {
       </div>
 
       <div>
-        <div className="label mb-2">Interventions · counterfactual reruns</div>
+        <div className="label mb-2 flex items-center gap-1.5">Interventions · counterfactual reruns <Tier tier="derived" sources={["neurascopeHeuristics"]} context="Counterfactual deltas · CORTEX rerun on an edited feature timeline" /></div>
         <ul className="space-y-2">
           {ivs.map((iv) => {
             const cf = cfs[iv.id];
@@ -110,11 +111,11 @@ function StateView() {
   const select = useLab((s) => s.selectFracture);
   const d = run.drivers;
   const hz = run.sim.hz;
-  const rows: [string, number, "derived" | "heuristic" | "literature", string[]][] = [
-    ["Novelty (surprise)", sampleAt(d.novelty, hz, time), "literature", ["itti2009"]],
-    ["Orienting salience", sampleAt(d.salience, hz, time), "literature", ["lang2000", "deepgaze2022"]],
-    ["Processing load", sampleAt(d.load, hz, time), "literature", ["lang2000", "fisher2020"]],
-    ["Semantic progression", sampleAt(d.progression, hz, time), "derived", ["cohen2017"]],
+  const rows: [string, number, EvidenceTier, string[]][] = [
+    ["Novelty (surprise)", sampleAt(d.novelty, hz, time), "derived", ["itti2009", "neurascopeHeuristics"]],
+    ["Orienting salience", sampleAt(d.salience, hz, time), "derived", ["lang2000", "corbetta2002", "neurascopeHeuristics"]],
+    ["Processing load", sampleAt(d.load, hz, time), "derived", ["lang2000", "fisher2020", "neurascopeHeuristics"]],
+    ["Semantic progression", sampleAt(d.progression, hz, time), "derived", ["cohen2017", "neurascopeHeuristics"]],
     ["Staticness", sampleAt(d.staticness, hz, time), "heuristic", ["neurascopeHeuristics"]],
     ["Habituation", sampleAt(d.habituation, hz, time), "heuristic", ["neurascopeHeuristics"]],
   ];
@@ -123,12 +124,12 @@ function StateView() {
     <div className="space-y-5">
       <div>
         <div className="label mb-1">CORTEX state · {time.toFixed(2)} s</div>
-        <div className="text-[11px] text-fg-3">{cohort === null ? "Population" : COHORTS[cohort].label} · hazard <span className="num text-fg-2">{h.toFixed(3)}/s</span></div>
+        <div className="text-[11px] text-fg-3">{cohort === null ? "Population" : COHORTS[cohort].label} · hazard <span className="num text-fg-2">{h.toFixed(3)}/s</span> <Tier tier="derived" sources={["cohen2017", "tong2020", "neurascopeHeuristics"]} context="Disengagement hazard · CORTEX viewer-level simulation" /></div>
       </div>
       <ul className="space-y-2">
         {rows.map(([label, v, tier, src]) => (
           <li key={label} className="flex items-center gap-2 text-[11.5px]">
-            <Tier tier={tier} sources={src} context={label} />
+            <Tier tier={tier} sources={src} context={`${label} · CORTEX driver`} />
             <span className="flex-1 text-fg-2">{label}</span>
             <span className="h-[3px] w-20 overflow-hidden rounded bg-line">
               <span className="block h-full bg-fg-2/70" style={{ width: `${Math.round(Math.min(1, v) * 100)}%` }} />

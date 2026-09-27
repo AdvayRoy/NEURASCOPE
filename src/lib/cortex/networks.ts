@@ -82,7 +82,7 @@ export const NETWORKS: NetworkSpec[] = [
 
 export type NetworkSeries = Record<NetworkId, Float32Array>;
 
-/** Computational demand per network, 0..1. Not measured or predicted biological activation. */
+/** Computational demand per network, 0..1. Tier C (CORTEX output); Yeo 2011 / Corbetta 2002 inform the grouping only. Not measured or predicted biological activation. */
 export function networkSeries(f: FeatureTimeline, d: CortexDrivers, attention: Float32Array): NetworkSeries {
   const n = f.n;
   const mk = () => new Float32Array(n);

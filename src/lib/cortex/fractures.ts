@@ -58,12 +58,12 @@ export interface Fracture {
   sources: string[];
 }
 
-const DRIVER_META: Record<DriverKey, { label: string; sources: string[]; tier: EvidenceTier; networks: NetworkId[] }> = {
+export const DRIVER_META: Record<DriverKey, { label: string; sources: string[]; tier: EvidenceTier; networks: NetworkId[] }> = {
   novelty: { label: "Visual / semantic novelty", sources: ["itti2009", "ki2016"], tier: "derived", networks: ["visual", "salience"] },
   progression: { label: "Semantic progression", sources: ["cohen2017", "ki2016"], tier: "derived", networks: ["semantic"] },
   load: { label: "Processing demand", sources: ["lang2000", "jensen2002"], tier: "derived", networks: ["control", "language"] },
   payoff: { label: "Unresolved payoff", sources: ["neurascopeHeuristics", "tong2020"], tier: "heuristic", networks: ["semantic", "control"] },
-  static: { label: "Static visual state", sources: ["madsen2021", "bbbd2026", "itti2009"], tier: "derived", networks: ["visual", "dorsal"] },
+  static: { label: "Static visual state", sources: ["madsen2021", "bbbd2026", "itti2009", "neurascopeHeuristics"], tier: "heuristic", networks: ["visual", "dorsal"] },
   habituation: { label: "Habituation", sources: ["itti2009", "neurascopeHeuristics"], tier: "heuristic", networks: ["salience"] },
   salience: { label: "Orienting salience", sources: ["lang2000", "corbetta2002"], tier: "derived", networks: ["ventral", "salience"] },
 };

@@ -17,7 +17,7 @@ export function NetworkLegend() {
     <div className="glass pointer-events-auto w-[204px] shrink-0 rounded-lg px-2 py-1.5">
       <div className="label mb-2 flex items-center justify-between">
         <span>Functional networks</span>
-        <Tier tier="literature" sources={["yeo2011", "corbetta2002"]} context="Network overlays (parcel-level grouping)" />
+        <Tier tier="derived" sources={["yeo2011", "corbetta2002", "neurascopeHeuristics"]} context="Network overlays · CORTEX computational demand on literature-derived parcel groupings, not measured activation" />
       </div>
       <ul className="space-y-[3px]">
         {NETWORKS.map((n) => {

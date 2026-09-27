@@ -6,7 +6,7 @@ import { useLab } from "@/lib/state/store";
 
 const ROWS: [keyof (typeof SOURCES)[string], string][] = [
   ["experiment", "Experiment / dataset"],
-  ["measured", "Measured variable"],
+  ["measured", "Measured in the study"],
   ["finding", "Finding used"],
   ["usage", "How NEURASCOPE uses it"],
   ["limitation", "Limitation"],
@@ -34,6 +34,9 @@ export function EvidenceDrawer() {
               <div>
                 <div className="label">Evidence</div>
                 <div className="mt-1 text-[13px] text-fg-2">{ev.context}</div>
+                <p className="mt-2 text-[11px] leading-snug text-fg-3">
+                  Sources below ground or calibrate this value. The letter on each source is the source&apos;s own tier; a CORTEX output stays Tier C even when literature calibrates it.
+                </p>
               </div>
               <button onClick={() => set({ evidence: null })} className="text-[12px] text-fg-3 hover:text-fg" aria-label="Close evidence">
                 Close
@@ -43,7 +46,7 @@ export function EvidenceDrawer() {
               {ev.sourceIds.map((id) => SOURCES[id]).filter(Boolean).map((s) => (
                 <article key={s.id} className="border-b border-line py-5 last:border-0">
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border border-line-2 font-mono text-[10px] text-fg-2" title={TIER_LABEL[s.tier]}>
+                    <span className="mt-0.5 inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border border-line-2 font-mono text-[10px] text-fg-2" title={`Source tier · ${TIER_LABEL[s.tier]}`}>
                       {TIER_LETTER[s.tier]}
                     </span>
                     <div className="min-w-0">
@@ -51,7 +54,7 @@ export function EvidenceDrawer() {
                         {s.title}
                       </a>
                       <div className="mt-1 text-[11.5px] text-fg-3">
-                        {s.authors} · {s.year} · {s.venue} · {TIER_LABEL[s.tier]}
+                        {s.authors} · {s.year} · {s.venue} · source tier {TIER_LETTER[s.tier]} ({TIER_LABEL[s.tier]})
                       </div>
                     </div>
                   </div>

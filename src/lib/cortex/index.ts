@@ -83,7 +83,7 @@ export function runCounterfactual(ontology: VideoOntology, base: CortexRun, inte
   return { intervention, run, evalAt, original, counterfactual, deltaPts: (counterfactual - original) * 100, endOriginal, endCounterfactual };
 }
 
-/** Provenanced readouts for the metrics overlay at time t. */
+/** Provenanced readouts for the metrics overlay at time t. All are CORTEX outputs (Tier C); sources are calibration sources. */
 export function readouts(run: CortexRun, t: number, cohortIndex: number | null) {
   const hz = run.sim.hz;
   const att = cohortIndex === null ? run.sim.attention : run.sim.attentionByCohort[cohortIndex];
@@ -91,7 +91,7 @@ export function readouts(run: CortexRun, t: number, cohortIndex: number | null) 
   const out: Record<string, ProvenancedValue> = {
     attention: pv(sampleAt(att, hz, t), "derived", ["madsen2021", "ki2016", "neurascopeHeuristics"], "Survival-weighted mean latent attention of synthetic viewers"),
     load: pv(Math.min(1.5, sampleAt(run.drivers.load, hz, t)), "derived", ["lang2000"], "Information introduced per second relative to reference capacity"),
-    reliability: pv(sampleAt(run.eeg.isc, hz, t), "literature", ["madsen2021", "ki2016"], "Attention mapped onto gaze-ISC scale (distracted 0.12 → attentive 0.35)"),
+    reliability: pv(sampleAt(run.eeg.isc, hz, t), "derived", ["madsen2021", "ki2016"], "CORTEX attention mapped onto the Madsen 2021 gaze-ISC scale (distracted 0.12 → attentive 0.35); model-derived proxy, not measured ISC"),
     survival: pv(sampleAt(ret, hz, t), "derived", ["cohen2017", "neurascopeHeuristics"], "R̂(t) = mean_i S_i(t) from the viewer-level hazard simulation"),
   };
   return out;
