@@ -8,7 +8,7 @@ All constants live in `src/lib/cortex/params.ts`. Source ids refer to `src/lib/e
 
 | Tier | Code value | Meaning |
 |---|---|---|
-| A | `empirical` | A dataset with measured recordings (only `bbbd2026`, used for effect *directions*) |
+| A | `empirical` | Observed in the source video itself (e.g. Oriane/local-file signals). No external dataset is Tier A: `bbbd2026` is cited as Tier B because only its published effect directions are used |
 | B | `literature` | Published findings / summary statistics |
 | C | `derived` | Computed by CORTEX from inputs; literature may calibrate it |
 | D | `heuristic` | Chosen parameter or rule, not fitted to data (`neurascopeHeuristics`) |
@@ -164,7 +164,23 @@ Thresholds `FRACTURE` are all Tier D.
 8. Observation (`observe`): static seconds, words in window / since last cut, new concepts, open-loop seconds, payoff status (`resolved`/`unresolved`/`none-open`), overlapping transcript.
 9. Keep top 5 by `lossPts`, re-sort by time, ids `F1…`, `severity = lossPts / max lossPts`.
 
-Driver provenance (`DRIVER_META`): novelty (C; itti2009, ki2016), progression (C; cohen2017, ki2016), load (C; lang2000, jensen2002), static (C; madsen2021, bbbd2026, itti2009), salience (C; lang2000, corbetta2002), payoff (D; neurascopeHeuristics, tong2020), habituation (D; itti2009, neurascopeHeuristics). Each fracture also cites ki2016 and cohen2017.
+Driver provenance (`DRIVER_META`): novelty (C; itti2009, ki2016), progression (C; cohen2017, ki2016), load (C; lang2000, jensen2002), static (D; madsen2021, bbbd2026, itti2009, neurascopeHeuristics — hand-set staticness rule), salience (C; lang2000, corbetta2002), payoff (D; neurascopeHeuristics, tong2020), habituation (D; itti2009, neurascopeHeuristics). Each fracture also cites ki2016 and cohen2017.
+
+## Synthetic reviewers — `src/components/reviewers/reviewerState.ts`
+
+Visual encoding only (label: "Synthetic behavioral expression · CORTEX visualization · not measured emotion"). All inputs are cohort CORTEX outputs at the playhead `t`; values are deterministic and clamped to [0, 1]:
+
+```
+attention  = A_c(t)                               → gaze-line length/opacity, forward lean
+survival   = R_c(t)                               → opacity 0.28 + 0.72·R, rim intensity
+withdrawal = log(H_c(t) / median_t H(t)) / log 6  → head turns away from the viewer, pitch down
+orienting  = (w_nov·novelty + w_sal·salience)/(w_nov + w_sal)   → small upward orienting tilt
+tension    = (load(t) − capacity_c) / 0.6         → sharper, cooler rim (the model's load-penalty term)
+fracture   = env(t) · lossShare_c / 0.15          → warm rim + extra turn-away; env ramps in 0.35 s before
+                                                    the fracture window and decays 0.6 s after it
+```
+
+Mapping gains are Tier D presentation choices; the inputs are Tier C.
 
 ## 7. Synthetic EEG proxy — `eeg.ts`
 

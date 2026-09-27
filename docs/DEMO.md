@@ -39,10 +39,10 @@ Notes:
 **1:00 — Cohorts / synthetic reviewers (right rail).** Click **Cold Scroller**, then **All viewers**.
 > "Selecting a cohort filters everything — brain, timeline, audience field, inspector. Cohorts are behavioral regimes, not demographics." 
 
-If the lead's synthetic reviewers are present: one live 3D reviewer per cohort, labelled "Synthetic behavioral expression · CORTEX visualization · not measured emotion". Select a reviewer to filter; say: "These faces are a visualization of each cohort's CORTEX state — not measured emotion."
+Each cohort is shown as a live 3D synthetic reviewer, labelled "Synthetic behavioral expression · CORTEX visualization · not measured emotion". Select a reviewer to filter; say: "These figures are a visualization of each cohort's CORTEX state — head pose follows hazard, presence follows survival. Not measured emotion."
 
 **1:20 — Fracture.** Click the first fracture marker on the timeline, or press `1`.
-> "A fracture is a window where hazard rises well above its recent baseline and costs real survival points, and CORTEX can name the driver." Point at Mechanism, Observed in source (static seconds, words since last cut, new concepts, open loop) and per-cohort impact. With reviewers present: "During a fracture all four reviewers respond from their own cohort state."
+> "A fracture is a window where hazard rises well above its recent baseline and costs real survival points, and CORTEX can name the driver." Point at Mechanism, Observed in source (static seconds, words since last cut, new concepts, open loop) and per-cohort impact. Say: "During a fracture all four reviewers respond from their own cohort state — the Cold Scroller turns away while the Intent Viewer stays forward."
 
 **1:45 — Evidence.** Click any tier chip in the Mechanism list → EvidenceDrawer.
 > "Here's the study, what it measured, what we use from it, and its limitation. We use BBBD effect directions and Madsen's gaze-ISC summary statistics; we don't ingest participant recordings."
