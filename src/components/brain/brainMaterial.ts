@@ -11,11 +11,11 @@ export function createBrainMaterial(regionTex: THREE.DataTexture) {
     uRegions: { value: regionTex },
     uSignal: { value: new THREE.Color("#8fb3ff") },
     uFracture: { value: new THREE.Color("#ff7a45") },
-    uBase: { value: new THREE.Color("#b8b3a8") },
+    uBase: { value: new THREE.Color("#d6d0c4") },
     uOpacity: { value: 1 },
     uDim: { value: 0 },
   };
-  const mat = new THREE.MeshStandardMaterial({ color: "#b8b3a8", roughness: 0.78, metalness: 0.0, transparent: false });
+  const mat = new THREE.MeshStandardMaterial({ color: "#d6d0c4", roughness: 0.72, metalness: 0.0, transparent: false });
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
@@ -40,8 +40,9 @@ float fres = pow(1.0 - clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0), 2.2);
 vec3 base = diffuseColor.rgb * mix(1.0, 0.42, uDim * (1.0 - rd.g));
 vec3 over = mix(uSignal, uFracture, rd.b);
 float k = clamp(rd.r, 0.0, 1.0);
-diffuseColor.rgb = mix(base, over * (0.55 + 0.45 * k), k * 0.85);
-diffuseColor.rgb += over * fres * k * 0.35;
+float kv = smoothstep(0.12, 0.95, k);
+diffuseColor.rgb = mix(base, over * (0.6 + 0.4 * k), kv * 0.82);
+diffuseColor.rgb += mix(vec3(0.05), over * 0.35, kv) * fres;
 diffuseColor.rgb += vec3(0.08) * rd.a;`,
       );
   };
