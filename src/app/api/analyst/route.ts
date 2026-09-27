@@ -5,7 +5,10 @@ Rules: use only the structured state you are given; never invent numbers, studie
 distinguish evidence tiers (A empirical, B literature, C model-derived, D heuristic); never describe synthetic EEG as measured; be concise (under 120 words).`;
 
 export async function POST(req: Request) {
-  const { question, context } = (await req.json()) as { question: string; context: unknown };
+  const { question, context } = (await req.json()) as { question: unknown; context: unknown };
+  if (typeof question !== "string" || !question.trim() || question.length > 500) {
+    return NextResponse.json({ answer: null, provider: null, error: "Question must be 1–500 characters." }, { status: 400 });
+  }
   const user = `Structured CORTEX state:\n${JSON.stringify(context).slice(0, 12000)}\n\nQuestion: ${question}`;
   try {
     if (process.env.ANTHROPIC_API_KEY) {

@@ -232,7 +232,7 @@ export function computeDrivers(f: FeatureTimeline): CortexDrivers {
     const z = Math.abs(v - mean) / Math.sqrt(varc + 1e-4);
     mean += (v - mean) * 0.08;
     varc += ((v - mean) ** 2 - varc) * 0.08;
-    const perceptual = Math.min(1, z / 3) * 0.7 + f.cut[i] * 0.3;
+    const perceptual = f.availability.visual ? Math.min(1, z / 3) * 0.7 + f.cut[i] * 0.3 : 0.3;
     const semantic = f.availability.transcript ? Math.min(1, f.newConcepts[i] / DYNAMICS.conceptRef) : 0.4;
     novelty[i] = Math.min(1, 0.55 * perceptual + 0.45 * semantic);
     // Orienting responses (Lang 2000): cuts, audio onsets, product mentions decay over ~0.8 s.
@@ -246,7 +246,7 @@ export function computeDrivers(f: FeatureTimeline): CortexDrivers {
     load[i] = 0.5 * speech + 0.3 * concepts + 0.2 * v;
     progression[i] = f.availability.transcript ? Math.min(1, f.newConcepts[i] / DYNAMICS.conceptRef) : 0.5;
     payoffDistance[i] = open >= 0 ? Math.min(1, (i - open) / hz / DYNAMICS.payoffSaturation) : 0;
-    sinceChange = v > DYNAMICS.staticThreshold || f.cut[i] > 0 ? 0 : sinceChange + dt;
+    sinceChange = !f.availability.visual || v > DYNAMICS.staticThreshold || f.cut[i] > 0 ? 0 : sinceChange + dt;
     staticness[i] = Math.min(1, sinceChange / DYNAMICS.staticSaturation);
     // Habituation: builds when nothing new happens, recovers with novelty.
     hab += dt * ((1 - novelty[i]) * (1 - hab) / DYNAMICS.tauHabituation - (novelty[i] * hab) / DYNAMICS.tauRecovery);

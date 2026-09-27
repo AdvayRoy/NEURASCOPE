@@ -74,3 +74,13 @@ describe("CORTEX", () => {
     expect(r.drivers.progression[50]).toBeCloseTo(0.5, 5);
   });
 });
+
+describe("unmeasured visuals", () => {
+  it("does not diagnose static footage or propose visual patches without decoded frames", () => {
+    const r = runCortex(testOntology({ signals: undefined }), { population: 2000 });
+    expect(r.timeline.availability.visual).toBe(false);
+    expect(Math.max(...Array.from(r.drivers.staticness))).toBe(0);
+    expect(r.interventions.some((i) => i.op.kind === "insert-visual-change")).toBe(false);
+    for (const f of r.fractures) expect(Number.isFinite(f.lossPts)).toBe(true);
+  });
+});

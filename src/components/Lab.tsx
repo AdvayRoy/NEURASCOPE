@@ -17,7 +17,7 @@ export function Lab() {
     void loadRun().then((r) => {
       if (!live || !r || useLab.getState().phase !== "input") return;
       useLab.getState().set({ context: r.saved.context });
-      void runPipeline({ url: r.saved.url, fixture: r.saved.fixture, file: r.file });
+      void runPipeline({ url: r.saved.url, fixture: r.saved.fixture, file: r.file, restored: r.ontology });
     });
     return () => { live = false; };
   }, []);

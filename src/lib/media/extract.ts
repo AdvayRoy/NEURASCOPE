@@ -5,12 +5,22 @@ const H = 128;
 const HZ = 5;
 
 function seek(v: HTMLVideoElement, t: number) {
-  return new Promise<void>((resolve) => {
-    const done = () => {
+  if (Math.abs(v.currentTime - t) < 1e-3 && v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
       v.removeEventListener("seeked", done);
+      v.removeEventListener("error", fail);
+    };
+    const done = () => {
+      cleanup();
       resolve();
     };
+    const fail = () => {
+      cleanup();
+      reject(new Error("The browser failed while decoding this file."));
+    };
     v.addEventListener("seeked", done);
+    v.addEventListener("error", fail);
     v.currentTime = t;
   });
 }
@@ -61,55 +71,58 @@ async function audioRms(file: Blob, duration: number): Promise<number[]> {
 /** Measures visual change, luminance, gradient-energy dispersion, audio RMS and hard cuts from a local video file. */
 export async function extractSignals(file: Blob, onProgress?: (p: number) => void): Promise<{ signals: MediaSignals; duration: number }> {
   const url = URL.createObjectURL(file);
-  const v = document.createElement("video");
-  v.muted = true;
-  v.playsInline = true;
-  v.preload = "auto";
-  v.src = url;
-  await new Promise<void>((res, rej) => {
-    v.onloadeddata = () => res();
-    v.onerror = () => rej(new Error("This file could not be decoded by the browser."));
-  });
-  const duration = v.duration;
-  const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-  const n = Math.max(2, Math.floor(duration * HZ));
-  const frameDiff: number[] = [];
-  const luminance: number[] = [];
-  const entropy: number[] = [];
-  let prev: Float32Array | null = null;
-  for (let i = 0; i < n; i++) {
-    await seek(v, Math.min(duration - 0.01, i / HZ));
-    ctx.drawImage(v, 0, 0, W, H);
-    const d = ctx.getImageData(0, 0, W, H).data;
-    const lum = new Float32Array(W * H);
-    let sum = 0;
-    for (let p = 0; p < W * H; p++) {
-      lum[p] = (0.2126 * d[4 * p] + 0.7152 * d[4 * p + 1] + 0.0722 * d[4 * p + 2]) / 255;
-      sum += lum[p];
+  try {
+    const v = document.createElement("video");
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.src = url;
+    await new Promise<void>((res, rej) => {
+      v.onloadeddata = () => res();
+      v.onerror = () => rej(new Error("This file could not be decoded by the browser."));
+    });
+    const duration = v.duration;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+    const n = Math.max(2, Math.floor(duration * HZ));
+    const frameDiff: number[] = [];
+    const luminance: number[] = [];
+    const entropy: number[] = [];
+    let prev: Float32Array | null = null;
+    for (let i = 0; i < n; i++) {
+      await seek(v, Math.min(duration - 0.01, i / HZ));
+      ctx.drawImage(v, 0, 0, W, H);
+      const d = ctx.getImageData(0, 0, W, H).data;
+      const lum = new Float32Array(W * H);
+      let sum = 0;
+      for (let p = 0; p < W * H; p++) {
+        lum[p] = (0.2126 * d[4 * p] + 0.7152 * d[4 * p + 1] + 0.0722 * d[4 * p + 2]) / 255;
+        sum += lum[p];
+      }
+      let diff = 0;
+      if (prev) for (let p = 0; p < W * H; p++) diff += Math.abs(lum[p] - prev[p]);
+      frameDiff.push(prev ? diff / (W * H) : 0);
+      luminance.push(sum / (W * H));
+      entropy.push(spatialEntropy(lum));
+      prev = lum;
+      onProgress?.((i + 1) / n);
     }
-    let diff = 0;
-    if (prev) for (let p = 0; p < W * H; p++) diff += Math.abs(lum[p] - prev[p]);
-    frameDiff.push(prev ? diff / (W * H) : 0);
-    luminance.push(sum / (W * H));
-    entropy.push(spatialEntropy(lum));
-    prev = lum;
-    onProgress?.((i + 1) / n);
+    // Hard cuts: frame-difference peaks well above the local distribution.
+    const sorted = frameDiff.slice().sort((a, b) => a - b);
+    const med = sorted[Math.floor(sorted.length / 2)];
+    const mad = sorted.map((x) => Math.abs(x - med)).sort((a, b) => a - b)[Math.floor(sorted.length / 2)] || 1e-3;
+    const cuts: number[] = [];
+    for (let i = 1; i < frameDiff.length - 1; i++) {
+      const x = frameDiff[i];
+      if (x > med + 6 * mad && x > 0.06 && x >= frameDiff[i - 1] && x >= frameDiff[i + 1] && (!cuts.length || i / HZ - cuts[cuts.length - 1] > 0.4)) cuts.push(i / HZ);
+    }
+    return {
+      duration,
+      signals: { hz: HZ, frameDiff, luminance, spatialEntropy: entropy, audioRms: await audioRms(file, duration), cuts, measuredFrom: "decoded-video" },
+    };
+  } finally {
+    URL.revokeObjectURL(url);
   }
-  URL.revokeObjectURL(url);
-  // Hard cuts: frame-difference peaks well above the local distribution.
-  const sorted = frameDiff.slice().sort((a, b) => a - b);
-  const med = sorted[Math.floor(sorted.length / 2)];
-  const mad = sorted.map((x) => Math.abs(x - med)).sort((a, b) => a - b)[Math.floor(sorted.length / 2)] || 1e-3;
-  const cuts: number[] = [];
-  for (let i = 1; i < frameDiff.length - 1; i++) {
-    const x = frameDiff[i];
-    if (x > med + 6 * mad && x > 0.06 && x >= frameDiff[i - 1] && x >= frameDiff[i + 1] && (!cuts.length || i / HZ - cuts[cuts.length - 1] > 0.4)) cuts.push(i / HZ);
-  }
-  return {
-    duration,
-    signals: { hz: HZ, frameDiff, luminance, spatialEntropy: entropy, audioRms: await audioRms(file, duration), cuts, measuredFrom: "decoded-video" },
-  };
 }

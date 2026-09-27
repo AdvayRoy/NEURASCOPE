@@ -16,7 +16,10 @@ interface Header {
 /** Loads the Desikan–Killiany brain (brainder.org meshes, CC BY-SA 3.0) packed by scripts/build-brain.mjs. */
 export function loadBrain(): Promise<BrainAsset> {
   cache ??= fetch("/models/cortex.bin")
-    .then((r) => r.arrayBuffer())
+    .then((r) => {
+      if (!r.ok) throw new Error(`Brain asset request failed (${r.status})`);
+      return r.arrayBuffer();
+    })
     .then((buf) => {
       const dv = new DataView(buf);
       if (dv.getUint32(0, true) !== 0x4e534358) throw new Error("Bad brain asset");
@@ -40,6 +43,10 @@ export function loadBrain(): Promise<BrainAsset> {
         return { name: p.name, geometry: g };
       });
       return { regions: header.regions, parts };
+    })
+    .catch((e: unknown) => {
+      cache = null;
+      throw e;
     });
   return cache;
 }

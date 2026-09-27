@@ -138,7 +138,7 @@ export function detectFractures(
   const w = meanWeights(context);
   const out: Fracture[] = [];
   for (const [s, e0] of wins) {
-    const e = Math.max(e0, s + Math.round(FRACTURE.minDuration * hz) - 1);
+    const e = Math.min(n - 1, Math.max(e0, s + Math.round(FRACTURE.minDuration * hz) - 1));
     if (e - s + 1 < FRACTURE.minDuration * hz) continue;
     // Loss in excess of baseline: integrate (H - base) * R over the window.
     let loss = 0;

@@ -10,7 +10,11 @@ export interface RunInput {
   url?: string;
   file?: File | null;
   fixture?: boolean;
+  /** Previously normalized ontology (with its original provenance) restored from local storage. */
+  restored?: VideoOntology;
 }
+
+let generation = 0;
 
 const STEPS: PipelineStep[] = [
   { id: "acquire", label: "Acquiring video intelligence", status: "pending" },
@@ -33,12 +37,16 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export async function runPipeline(input: RunInput) {
+  const gen = ++generation;
   const lab = useLab.getState();
   lab.set({ phase: "loading", steps: STEPS.map((s) => ({ ...s })), error: null, run: null, counterfactuals: {}, activeCf: null, fractureId: null, time: 0 });
   try {
     step("acquire", "active");
     let ontology: VideoOntology | null = null;
-    if (input.fixture) {
+    if (input.restored) {
+      ontology = input.restored;
+      step("acquire", "done", `Restored saved analysis input · ${ontology.source}`);
+    } else if (input.fixture) {
       ontology = (await json<{ ontology: VideoOntology }>(await fetch("/api/oriane/fixture"))).ontology;
       step("acquire", "done", "Development fixture · not Oriane output");
     } else if (input.url) {
@@ -56,7 +64,10 @@ export async function runPipeline(input: RunInput) {
     }
 
     let mediaUrl: string | null = null;
-    if (input.file) {
+    if (input.restored && ontology) {
+      if (input.file) mediaUrl = URL.createObjectURL(input.file);
+      step("signals", ontology.signals ? "done" : "skipped", ontology.signals ? "Restored measured signals" : "No media file · visual and audio terms held at neutral priors");
+    } else if (input.file) {
       step("signals", "active");
       const { signals, duration } = await extractSignals(input.file, (p) => step("signals", "active", `${Math.round(p * 100)}%`));
       ontology = ontology ?? localOnlyOntology(input.file.name, duration);
@@ -76,9 +87,11 @@ export async function runPipeline(input: RunInput) {
     step("audience", "done", `${run.sim.size.toLocaleString()} seeded viewers · seed ${run.seed}`);
     step("evidence", "done", `${run.fractures.length} fracture${run.fractures.length === 1 ? "" : "s"} with mechanisms`);
     await new Promise((r) => setTimeout(r, 350));
+    if (gen !== generation) return;
     useLab.getState().set({ phase: "workspace", ontology, run, mediaUrl, time: 0 });
-    void saveRun(input, useLab.getState().context);
+    void saveRun(input, ontology, useLab.getState().context);
   } catch (e) {
+    if (gen !== generation) return;
     const cur = useLab.getState().steps.find((s) => s.status === "active");
     if (cur) step(cur.id, "error");
     useLab.getState().set({ error: (e as Error).message });
@@ -88,7 +101,9 @@ export async function runPipeline(input: RunInput) {
 export async function rerunContext() {
   const { ontology, context, set } = useLab.getState();
   if (!ontology) return;
+  const gen = ++generation;
   const run = await cortexClient.run(ontology, { context });
+  if (gen !== generation || useLab.getState().ontology !== ontology) return;
   set({ run, counterfactuals: {}, activeCf: null, fractureId: null });
   saveContext(context);
 }
@@ -100,5 +115,6 @@ export async function simulatePatch(interventionId: string) {
   if (counterfactuals[iv.id]) return set({ activeCf: iv.id });
   set({ cfPending: iv.id });
   const cf = await cortexClient.counterfactual(iv);
+  if (useLab.getState().run !== run) return;
   set({ counterfactuals: { ...useLab.getState().counterfactuals, [iv.id]: cf }, activeCf: iv.id, cfPending: null });
 }

@@ -32,14 +32,29 @@ const median = (xs: number[]) => {
   return s[Math.floor(s.length / 2)];
 };
 
+function isPublicHttpsUrl(raw: string) {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  const h = u.hostname.toLowerCase();
+  if (u.protocol !== "https:" || u.username || u.password) return false;
+  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return false;
+  if (/^[\d.]+$/.test(h) || h.includes(":") || h.startsWith("[")) return false;
+  return true;
+}
+
 /** Visually similar published content from the Oriane corpus (text or image asset → visual similarity search). */
 export async function findComparables(input: { imageUrl?: string; text?: string; platform?: OrianePlatform }): Promise<CorpusResult> {
   const client = OrianeClient.fromEnv();
   if (!client) return { available: false, reason: "Corpus comparison unavailable: ORIANE_API_KEY is not configured." };
   if (!input.imageUrl && !input.text) return { available: false, reason: "No keyframe or description to search with." };
+  if (input.imageUrl && !isPublicHttpsUrl(input.imageUrl)) return { available: false, reason: "Keyframe URL must be a public HTTPS URL." };
   try {
     const asset = await client.createAsset(
-      input.imageUrl ? { type: "image", image: { type: "url", url: input.imageUrl } } : { type: "text", text: input.text!.slice(0, 500) },
+      input.imageUrl ? { type: "image", image: { type: "url", url: input.imageUrl } } : { type: "text", text: input.text!.slice(0, 300) },
     );
     const res = await client.searchContents(
       {

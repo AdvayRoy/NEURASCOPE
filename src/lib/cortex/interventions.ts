@@ -25,7 +25,7 @@ export function proposeInterventions(fr: Fracture, f: FeatureTimeline): Interven
   const keys = new Set(fr.drivers.map((d) => d.key));
   const w0 = Math.max(0, fr.start - 0.6);
   const w1 = Math.min(f.duration, fr.end + 0.4);
-  if (keys.has("static") || keys.has("novelty") || keys.has("habituation") || keys.has("salience")) {
+  if (f.availability.visual && (keys.has("static") || keys.has("novelty") || keys.has("habituation") || keys.has("salience"))) {
     out.push({
       id: `${fr.id}-visual`,
       fractureId: fr.id,
