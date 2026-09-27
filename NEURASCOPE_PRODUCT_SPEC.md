@@ -276,6 +276,1007 @@ No downstream system may silently substitute fake Oriane data and still label it
 
 ---
 
+
+# 5A. FROZEN ORIANE ARCHITECTURE v1 — September 27, 2026
+
+> **Architecture status: FROZEN for the hackathon build.**
+>
+> This section is the canonical Oriane architecture for NEURASCOPE v1. Where earlier broad/conceptual Oriane language in this document conflicts with this section, **this section wins**. Reopen this architecture only if the live Oriane API materially differs from the checked-in OpenAPI contract in \`docs/oriane/openapi.snapshot.json\`.
+
+## 5A.1 Product invariant
+
+NEURASCOPE answers one question:
+
+> **Where is this video likely to lose attention, why, and what should I change before I publish it?**
+
+Canonical loop:
+
+\`\`\`text
+DRAFT / PUBLISHED VIDEO
+        ↓
+OBSERVE
+        ↓
+MODEL
+        ↓
+SIMULATE
+        ↓
+ATTENTION FRACTURE
+        ↓
+GROUND AGAINST REAL-WORLD CORPUS
+        ↓
+DIAGNOSE
+        ↓
+INTERVENE
+        ↓
+RE-SIMULATE
+\`\`\`
+
+The product division is:
+
+> **CORTEX simulates the draft. Oriane grounds the simulation against the real content ecosystem.**
+
+Oriane is not the attention model. It is the external content-intelligence and corpus layer around CORTEX.
+
+---
+
+## 5A.2 Two source modes
+
+### Mode A — Draft preflight
+
+This is the canonical long-term customer workflow.
+
+\`\`\`text
+UNPUBLISHED MP4
+      │
+      ├──────────────────────┐
+      ▼                      ▼
+LOCAL MEDIA            DRAFT FINGERPRINT
+OBSERVATION                   │
+      │                       │
+      ▼                       ▼
+VIDEO ONTOLOGY           ORIANE CORPUS
+      │                       │
+      ▼                       ▼
+CORTEX                REFERENCE CONTENT
+      │                       │
+      ▼                       │
+SYNTHETIC AUDIENCE           │
+      │                       │
+      └────────────┬──────────┘
+                   ▼
+               DIAGNOSIS
+\`\`\`
+
+The unpublished video is decoded locally. NEURASCOPE measures the source itself and may extract selected representative frames for corpus retrieval. The full unpublished MP4 is not required to be sent to Oriane.
+
+Local observation includes the signals already implemented or explicitly added later:
+
+- frame difference / visual change
+- cuts
+- luminance
+- spatial entropy / gaze-dispersion proxy
+- audio RMS / onsets
+- duration and timing
+
+For corpus grounding, NEURASCOPE may extract a small set of representative draft frames, encode them as image assets, and use Oriane to retrieve related indexed public content.
+
+### Mode B — Published / hybrid analysis
+
+When a TikTok or Instagram URL is available, Oriane can resolve the indexed source record.
+
+Best hackathon demo input:
+
+\`\`\`text
+PUBLISHED URL + MATCHING MP4
+\`\`\`
+
+The URL supplies Oriane semantics/context; the MP4 supplies directly measured visual/audio signals.
+
+\`\`\`text
+PUBLISHED URL ──► ORIANE ──► transcript / keyframes / caption / hashtags /
+                              creator / audio / aggregate metadata
+                                      │
+                                      ▼
+                                VIDEO ONTOLOGY
+                                      ▲
+                                      │
+MATCHING MP4 ──► LOCAL DECODER ──► measured visual/audio signals
+\`\`\`
+
+Do not throw one source away when both exist. Merge them with explicit provenance.
+
+---
+
+## 5A.3 Oriane has four responsibilities
+
+Oriane owns exactly four roles in NEURASCOPE v1.
+
+### A. Published-source resolution
+
+For indexed TikTok/Instagram content, Oriane may provide:
+
+- timed transcript chunks
+- transcript language
+- keyframes / frames
+- caption
+- hashtags
+- duration
+- creator/account context
+- audio metadata
+- aggregate content metrics
+- request metadata / provenance
+
+Only fields actually returned by the live API may be used. Do not invent missing perception capabilities.
+
+### B. Draft/reference visual retrieval
+
+For unpublished drafts, NEURASCOPE may extract selected representative frames locally and create Oriane image assets from those frames.
+
+Recommended visual fingerprint:
+
+\`\`\`text
+HOOK FRAME
+PRE-FRACTURE FRAME
+FRACTURE-CENTER FRAME
+POST-FRACTURE FRAME
+PAYOFF / PRODUCT FRAME (when available)
+\`\`\`
+
+The API currently supports reusable image or text assets. Reuse assets where possible; do not recreate identical assets repeatedly.
+
+### C. Fracture-conditioned multimodal corpus retrieval
+
+After CORTEX identifies an Attention Fracture, construct a **Fracture Fingerprint** and use Oriane to retrieve relevant real-world content.
+
+The retrieval problem is not simply:
+
+> “find an image that looks like this frame.”
+
+It is:
+
+> “retrieve published content structurally, visually, and semantically relevant to this exact failure state.”
+
+Candidate dimensions include, only where supported by the live API:
+
+- visual similarity to one or more selected frames
+- transcript exact/fuzzy relevance
+- caption/category context
+- hashtag overlap
+- platform / format
+- language
+- creator scale
+- publication recency
+- audio context
+- duration proximity (if available in the API contract)
+
+Use nested queries when useful. Prefer broad candidate generation followed by transparent filtering/reranking over an overconstrained query that returns nothing.
+
+### D. Corpus reference intelligence
+
+Retrieved videos form a **CorpusReferenceSet** used as real-world context around a CORTEX diagnosis.
+
+Oriane gives CORTEX a reference population of public content; it does **not** provide attention ground truth.
+
+---
+
+## 5A.4 Fracture Fingerprint — canonical bridge between CORTEX and Oriane
+
+Every Attention Fracture should be representable as a machine-readable fingerprint.
+
+Conceptual contract:
+
+\`\`\`ts
+interface FractureFingerprint {
+  fractureId: string;
+
+  time: {
+    start: number;
+    end: number;
+    relativePosition: number;
+  };
+
+  structure: {
+    duration: number;
+    secondsSinceCut: number;
+    wordsSinceCut: number;
+    speechRate: number | null;
+    openLoopSeconds: number;
+    payoffState: string;
+  };
+
+  cortex: {
+    topDrivers: string[];
+    novelty: number;
+    salience: number;
+    load: number;
+    progression: number;
+    staticness: number;
+    habituation: number;
+  };
+
+  source: {
+    transcriptWindow?: string;
+    caption?: string;
+    hashtags?: string[];
+    platform?: string;
+  };
+
+  assets: {
+    beforeFrame?: string;
+    fractureFrame?: string;
+    afterFrame?: string;
+  };
+}
+\`\`\`
+
+Canonical bridge:
+
+\`\`\`text
+CORTEX
+   ↓
+ATTENTION FRACTURE
+   ↓
+FRACTURE FINGERPRINT
+   ↓
+ORIANE MULTIMODAL RETRIEVAL
+   ↓
+CORPUS REFERENCE SET
+\`\`\`
+
+This fingerprint is an internal retrieval/query object. Its CORTEX fields are model-derived; its source fields are observed/normalized source evidence.
+
+---
+
+## 5A.5 Corpus reference set and structural benchmarking
+
+Do not reduce Oriane corpus evidence to “median views” or a generic creator-analytics panel.
+
+The primary question is:
+
+> **How is this draft structurally unusual relative to relevant real published content?**
+
+A CorpusReferenceSet should prefer relevant content over merely top-performing content.
+
+Potential structural benchmark features, only when defensibly measurable:
+
+- video duration
+- speech density
+- timing of first semantic transition
+- timing of payoff/product mention
+- keyframe / visual-state transition timing
+- opening-hook structure
+- transcript progression
+- category/caption alignment
+- audio/category context
+
+Example UI:
+
+\`\`\`text
+CORPUS EVIDENCE · ORIANE
+23 related published videos
+
+First major semantic transition
+YOUR DRAFT        7.1 s
+REFERENCE MEDIAN  3.9 s
+
+Payoff / product mention
+YOUR DRAFT        12.8 s
+REFERENCE MEDIAN  7.0 s
+
+18 / 23 matched visual fingerprint
+14 / 23 matched semantic query
+\`\`\`
+
+The corpus median is **not** automatically an optimal edit target. It is reference evidence, not a causal prescription.
+
+Performance metadata such as views or engagement rate may be displayed only as secondary descriptive context and must be labelled accordingly.
+
+---
+
+## 5A.6 Hard epistemic boundary
+
+NEURASCOPE has three distinct evidence/truth layers.
+
+### 1. Observed source/corpus evidence
+
+Examples:
+
+- transcript says X at 6.3 s
+- source frame changes here
+- creator has N followers
+- comparable video duration is 23 s
+- Oriane visual similarity score is Y
+
+These come from Oriane or direct local observation.
+
+### 2. CORTEX predictions
+
+Examples:
+
+- attention
+- hazard
+- synthetic survival / retention
+- fracture severity
+- cohort impact
+- neural-reliability proxy
+- network demand
+- counterfactual delta
+
+These remain **Tier C — model-derived**, even when calibrated by literature.
+
+### 3. Real behavioral labels
+
+Future calibration data:
+
+- actual per-second retention
+- actual watch time
+- actual skip/drop-off behavior
+
+These must come from platform analytics or the content owner.
+
+Hard rule:
+
+\`\`\`text
+views ≠ attention
+likes ≠ retention
+engagement rate ≠ survival
+\`\`\`
+
+Oriane aggregate performance metadata must never be converted directly into CORTEX attention, survival, or retention ground truth.
+
+---
+
+## 5A.7 Which Oriane fields may enter CORTEX
+
+### Allowed as source/context features when available
+
+- timed transcript
+- duration
+- semantic timing derived from transcript
+- caption/context
+- hashtags/category context
+- keyframe timing
+- audio identity/context
+
+Any mapping from these fields to a CORTEX variable must be explicit, documented, and correctly tiered.
+
+### Not direct CORTEX attention features
+
+Keep these outside the attention calculation:
+
+- views
+- likes
+- shares
+- comments
+- engagement rate
+- creator follower count
+- verified status
+- popular comments
+
+These belong to **corpus context**, retrieval stratification, or future analysis—not direct attention prediction.
+
+Follower count may be used to construct a more comparable reference set (creator-scale matching); it must not imply greater or lower attention.
+
+---
+
+## 5A.8 Canonical data separation
+
+Keep source ontology and corpus intelligence separate.
+
+\`\`\`ts
+interface CorpusReferenceSet {
+  id: string;
+  provider: "oriane";
+  requestIds: string[];
+
+  sourceFractureId?: string;
+
+  retrieval: {
+    visualAssetIds: string[];
+    textAssetIds: string[];
+    filters: Record<string, unknown>;
+  };
+
+  results: CorpusReferenceVideo[];
+  benchmark: CorpusBenchmark;
+}
+\`\`\`
+
+\`\`\`ts
+interface CorpusReferenceVideo {
+  id: string;
+  platform: "tiktok" | "instagram";
+  matchedQueries: string[];
+
+  creator: {
+    handle: string;
+    followers: number;
+  };
+
+  duration: number | null;
+  transcriptChunks: TranscriptSegment[];
+  frames: Keyframe[];
+
+  metrics: {
+    views: number;
+    engagementRate: number | null;
+  };
+
+  similarity: {
+    visual: number | null;
+    transcript?: number | null;
+  };
+}
+\`\`\`
+
+\`\`\`ts
+interface CorpusBenchmark {
+  sampleSize: number;
+  duration?: DistributionSummary;
+  semanticTransition?: DistributionSummary;
+  payoffTiming?: DistributionSummary;
+  speechDensity?: DistributionSummary;
+  limitations: string[];
+}
+\`\`\`
+
+Do not stuff corpus results into \`VideoOntology\`. \`VideoOntology\` is the normalized source-video representation consumed by CORTEX; \`CorpusReferenceSet\` is external reference evidence.
+
+---
+
+## 5A.9 Provenance rules
+
+Run-level source state remains:
+
+\`\`\`text
+oriane-live
+dev-fixture
+local-only
+\`\`\`
+
+Do not collapse these.
+
+Field-level provenance should become more granular where useful:
+
+\`\`\`text
+origin: local-decoder
+origin: oriane
+origin: oriane-corpus
+\`\`\`
+
+Oriane request IDs should be preserved for live observations and corpus retrieval where available.
+
+A development fixture may never be presented as live Oriane output.
+
+---
+
+## 5A.10 Retrieval strategy
+
+### Stage 1 — build retrieval assets
+
+For a fracture, prefer approximately:
+
+- pre-fracture frame
+- fracture-center frame
+- post-fracture frame
+
+Optionally add hook/payoff frames when they materially help retrieval.
+
+Text assets may contain a concise semantic description or transcript window, subject to the API limits.
+
+### Stage 2 — broad candidate generation
+
+Prefer an OR-leaning multimodal retrieval strategy to avoid empty result sets.
+
+Conceptually:
+
+\`\`\`text
+platform / format guardrails
+AND
+(
+  visual similarity
+  OR transcript/category relevance
+)
+\`\`\`
+
+### Stage 3 — transparent local reranking
+
+NEURASCOPE may rerank candidate references by a documented relevance score using factors such as:
+
+- visual similarity
+- semantic/category overlap
+- duration proximity
+- creator-scale proximity
+
+If exposed, these weights are Tier D presentation/retrieval heuristics, not neuroscience.
+
+### Stage 4 — structural benchmark
+
+Compute only benchmark features that can be measured defensibly from the retrieved records.
+
+Do not automatically select only top-performing content. That creates survivorship and distribution confounds.
+
+---
+
+## 5A.11 UI / Evidence Graph
+
+Oriane corpus intelligence belongs inside the fracture diagnosis, not as a separate search dashboard.
+
+Desired evidence chain:
+
+\`\`\`text
+SOURCE VIDEO EVENT
+      ↓
+OBSERVED SOURCE EVIDENCE
+      ↓
+CORTEX DRIVER
+      ↓
+AFFECTED COHORT
+      ↓
+SCIENTIFIC PROVENANCE
+      ↓
+ORIANE CORPUS EVIDENCE
+      ↓
+INTERVENTION
+      ↓
+COUNTERFACTUAL
+\`\`\`
+
+Conceptual fracture panel:
+
+\`\`\`text
+ATTENTION FRACTURE F2
+4.5–5.4 s
+
+MODEL CONSEQUENCE
+Predicted hazard +0.037/s
+Predicted survival cost −3.8 pts
+
+CORTEX MECHANISMS
+Processing load ↑       C · model-derived
+Semantic progression ↓  C · model-derived
+Payoff unresolved       D · heuristic
+
+OBSERVED SOURCE
+3.6 s since visual transition
+27 spoken words since last cut
+0 new concepts in window
+payoff still open
+
+CORPUS EVIDENCE · ORIANE
+23 related published videos
+semantic transition: draft 7.1 s / reference median 3.9 s
+payoff: draft 12.8 s / reference median 7.0 s
+
+Performance metadata is descriptive only.
+Not retention ground truth.
+\`\`\`
+
+Do not build a generic Oriane advanced-search dashboard. Retrieval machinery remains behind the decision workflow.
+
+---
+
+## 5A.12 Brain, synthetic reviewers, EEG and Oriane
+
+The visualization stack is downstream of CORTEX:
+
+\`\`\`text
+CORTEX state
+    ├── brain network visualization
+    ├── synthetic EEG proxy
+    ├── retention / hazard
+    └── synthetic reviewer animation
+\`\`\`
+
+Oriane does not directly:
+
+- animate reviewers
+- generate neural activity
+- determine synthetic attention
+- generate EEG
+- calculate retention
+- calculate hazard
+- calculate counterfactual uplift
+
+The thin connection from the brain to a synthetic reviewer represents **CORTEX state projection / model-state coupling**, not a biological neural transmission and not an Oriane signal.
+
+---
+
+## 5A.13 Intervention ownership
+
+Interventions are generated from the CORTEX fracture and driver structure.
+
+\`\`\`text
+fracture
+   ↓
+driver attribution
+   ↓
+intervention hypothesis
+   ↓
+same-population counterfactual rerun
+\`\`\`
+
+Oriane corpus evidence may support or contextualize the reasoning, but Oriane does not directly define the optimal edit.
+
+Example:
+
+\`\`\`text
+CORTEX:
+payoff appears late / unresolved
+
+ORIANE CORPUS:
+related content tends to introduce comparable payoff earlier
+
+INTERVENTION:
+move payoff materially earlier
+
+SIMULATE PATCH:
+rerun identical seeded viewers
+\`\`\`
+
+Do not equate the reference median with a scientifically optimal target.
+
+---
+
+## 5A.14 LLM role
+
+The optional LLM remains an explanation layer.
+
+\`\`\`text
+structured CORTEX state
++ source observations
++ Oriane corpus summary
++ scientific provenance
+        ↓
+      LLM
+        ↓
+natural-language explanation
+\`\`\`
+
+The LLM may not create or modify simulation numbers, invent provider evidence, or claim that Oriane proves retention.
+
+---
+
+## 5A.15 Client/API scope
+
+Critical-path Oriane client methods:
+
+- \`searchContents()\`
+- \`createAsset()\`
+
+\`searchProfiles()\` is not required for the hackathon critical path. Add it only if live corpus construction genuinely needs it.
+
+Expand \`src/lib/oriane/types.ts\` only for fields/filters actually used by the frozen architecture. Do not mechanically mirror the entire OpenAPI schema.
+
+The checked-in API contract currently exposes richer search filters than the initial TypeScript wrapper, including caption, transcript fuzzy matching, hashtags, profile/creator metadata, engagement fields, publication time, audio, location and visual similarity. Use only those that improve retrieval/reference quality.
+
+Never invent unsupported endpoints.
+
+---
+
+## 5A.16 Cost, quota and caching
+
+The real key is a limited provider resource.
+
+Rules:
+
+- keep \`ORIANE_API_KEY\` server-only;
+- never use \`NEXT_PUBLIC_ORIANE_API_KEY\`;
+- keep provider routes rate-limited;
+- cache published URL → normalized ontology;
+- hash image/text assets and reuse Oriane asset IDs where practical;
+- cache fracture fingerprint/filter config → corpus results;
+- never call Oriane continuously as the playhead moves;
+- corpus calls happen on explicit evidence requests or bounded prefetch for the top fracture(s);
+- generic upstream failures must not expose credentials or raw provider details.
+
+Existing per-IP / route-wide protection and bounded caching should remain.
+
+---
+
+## 5A.17 Privacy
+
+For an unpublished draft:
+
+- decode the full video locally;
+- do not require uploading the complete MP4 to Oriane;
+- use only selected visual/text fingerprints needed for corpus retrieval;
+- make the source/corpus provenance clear.
+
+This is both technically aligned with the available API and a desirable product property.
+
+---
+
+## 5A.18 Failure architecture
+
+Oriane enriches NEURASCOPE but must not be a single point of failure.
+
+If Oriane fails:
+
+\`\`\`text
+CORTEX still runs
+synthetic viewers still run
+fractures still work
+counterfactuals still work
+
+Corpus Evidence:
+Unavailable
+\`\`\`
+
+If published URL resolution fails but a local MP4 exists, continue local analysis and mark the source correctly.
+
+No silent fixture substitution.
+
+---
+
+## 5A.19 Explicit non-goals
+
+Do not turn NEURASCOPE into:
+
+- a generic creator analytics dashboard
+- influencer discovery
+- a trend dashboard
+- a social-listening product
+- a comment-sentiment engine
+- a viral score
+- a dopamine score
+- demographic neuroscience
+- an arbitrary AI engagement score
+- a giant Oriane search UI
+- a full video editor
+
+Do not infer emotion from synthetic reviewers. Do not fabricate provider records. Do not convert views/likes into retention.
+
+---
+
+## 5A.20 Long-term calibration moat
+
+Hackathon architecture:
+
+\`\`\`text
+ORIANE
+real content structure / corpus
+        +
+CORTEX
+synthetic attention prediction
+\`\`\`
+
+Company architecture:
+
+\`\`\`text
+ORIANE PERCEPTION / CORPUS
+          │
+          ▼
+VIDEO ─► CORTEX
+          │
+          ▼
+      PREDICTION
+          │
+          ▼
+        PUBLISH
+          │
+          ▼
+ACTUAL PLATFORM RETENTION
+          │
+          ▼
+   PREDICTION ERROR
+          │
+          ▼
+    CALIBRATE CORTEX
+          │
+          └────► BETTER PREDICTION
+\`\`\`
+
+Oriane provides the world/content model. Actual creator/platform analytics provide behavioral labels. CORTEX learns the mapping.
+
+The long-term moat is:
+
+> **prediction → real outcome → calibration → better prediction**
+
+---
+
+## 5A.21 Frozen division of labor
+
+### Oriane — “What exists in the content ecosystem?”
+
+Provides:
+
+- indexed published-source intelligence
+- visual/semantic retrieval
+- creator/context metadata
+- reference content
+- corpus evidence
+
+### CORTEX — “What may happen to attention?”
+
+Provides:
+
+- attention
+- hazard
+- survival
+- synthetic audience
+- attention fractures
+- network state / neural proxy
+- counterfactual predictions
+
+### Scientific literature — “Why are these model relationships plausible?”
+
+Provides:
+
+- effect directions
+- priors
+- calibration anchors
+- limitations
+
+### Platform analytics — future — “What actually happened?”
+
+Provides:
+
+- actual retention
+- watch time
+- skip/drop-off behavior
+
+### LLM — “How do we communicate the structured result?”
+
+Provides:
+
+- explanation
+- summarization
+- grounded interaction
+
+---
+
+## 5A.22 Canonical full architecture
+
+\`\`\`text
+                         ┌────────────────────────────┐
+                         │         USER INPUT         │
+                         │ Draft MP4 and/or URL       │
+                         └─────────────┬──────────────┘
+                                       │
+                 ┌─────────────────────┴──────────────────────┐
+                 │                                            │
+                 ▼                                            ▼
+      ┌─────────────────────┐                     ┌─────────────────────┐
+      │ LOCAL MEDIA         │                     │ ORIANE SOURCE       │
+      │ OBSERVATION         │                     │ RESOLUTION          │
+      │                     │                     │ if published        │
+      │ frame change        │                     │ transcript          │
+      │ cuts                │                     │ keyframes           │
+      │ luminance           │                     │ caption             │
+      │ entropy             │                     │ hashtags            │
+      │ audio RMS           │                     │ creator / audio     │
+      └──────────┬──────────┘                     └──────────┬──────────┘
+                 │                                           │
+                 └──────────────────┬────────────────────────┘
+                                    ▼
+                          ┌──────────────────┐
+                          │ VIDEO ONTOLOGY   │
+                          └────────┬─────────┘
+                                   │
+                                   ▼
+                   ╔════════════════════════════╗
+                   ║          CORTEX            ║
+                   ║ novelty / salience         ║
+                   ║ progression / load         ║
+                   ║ relevance / habituation    ║
+                   ╚─────────────┬──────────────╝
+                                 │
+                                 ▼
+                    ┌─────────────────────────┐
+                    │ 10,000 SYNTHETIC       │
+                    │ VIEWERS                 │
+                    │ attention / hazard      │
+                    │ survival                │
+                    └────────────┬────────────┘
+                                 │
+                                 ▼
+                     ╔══════════════════════╗
+                     ║ ATTENTION FRACTURE   ║
+                     ╚──────────┬───────────╝
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │ FRACTURE FINGERPRINT│
+                     │ frames / transcript │
+                     │ structure / drivers │
+                     └──────────┬───────────┘
+                                │
+                                ▼
+                  ╔════════════════════════════╗
+                  ║          ORIANE            ║
+                  ║     CORPUS INTELLIGENCE    ║
+                  ║ assets / visual similarity ║
+                  ║ transcript / category      ║
+                  ╚────────────┬───────────────╝
+                               │
+                               ▼
+                  ┌────────────────────────────┐
+                  │ CORPUS REFERENCE SET       │
+                  │ related real content       │
+                  │ structural benchmarks      │
+                  │ descriptive performance    │
+                  └────────────┬───────────────┘
+                               │
+             ┌─────────────────┴─────────────────┐
+             │                                   │
+             ▼                                   ▼
+      CORTEX DIAGNOSIS                  CORPUS EVIDENCE
+             │                                   │
+             └─────────────────┬─────────────────┘
+                               ▼
+                     ┌────────────────────┐
+                     │ INTERVENTION       │
+                     └─────────┬──────────┘
+                               │
+                               ▼
+                     ┌────────────────────┐
+                     │ SIMULATE PATCH     │
+                     │ same viewers       │
+                     └─────────┬──────────┘
+                               │
+                               ▼
+                     ORIGINAL vs PATCH
+\`\`\`
+
+Canonical sentence:
+
+> **Local/Oriane source observation → CORTEX → synthetic audience → Attention Fracture → Fracture Fingerprint → Oriane multimodal corpus retrieval → structural corpus evidence → intervention → same-population counterfactual.**
+
+Hard scientific boundary:
+
+> **Oriane observes and retrieves. CORTEX predicts. Platform analytics later validate.**
+
+---
+
+## 5A.23 Hackathon implementation priorities
+
+### MUST SHIP
+
+- real \`ORIANE_API_KEY\` authentication works server-side
+- published URL resolution works against real Oriane
+- \`ORIANE LIVE\` provenance is visible
+- image/text asset creation works
+- fracture → Oriane comparable-content retrieval works
+- real corpus results appear as Corpus Evidence
+- no views/likes → retention misuse
+- request IDs / provenance retained
+- caching and rate limiting remain active
+
+### SHOULD SHIP
+
+- multiple fracture image assets
+- multimodal / nested retrieval
+- reference-set filtering
+- structural benchmark
+- matched-query provenance
+- cached real-analysis replay for demo resilience
+
+### DO NOT LET BLOCK THE DEMO
+
+- profile-search integration
+- popular-comment analysis
+- complex reranking
+- perfect category classification
+- advanced reference-set segmentation
+
+---
+
+## 5A.24 Pitch language
+
+Canonical short explanation:
+
+> **NEURASCOPE pre-tests short-form video before publication. CORTEX simulates 10,000 synthetic viewers and finds attention fractures; Oriane grounds those predictions against relevant real-world content; then NEURASCOPE simulates an edit before spending real attention.**
+
+Canonical Oriane explanation:
+
+> **Oriane gives CORTEX both a published-content perception layer and a real-world reference corpus. CORTEX remains the attention model.**
+
+Canonical analogy:
+
+> **Software has unit tests. Movies have test audiences. NEURASCOPE is the test environment for video.**
+
+
 # 6. CORTEX — Scientific Attention Engine
 
 CORTEX is the core scientific engine of NEURASCOPE.
