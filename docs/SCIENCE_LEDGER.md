@@ -170,9 +170,9 @@ Driver provenance (`DRIVER_META`): novelty (C; itti2009, ki2016), progression (C
 
 Visual encoding only (label: "Synthetic behavioral expression · CORTEX visualization · not measured emotion"). No emotion is inferred, labelled or measured.
 
-Pipeline: `video → CORTEX run → cohort-conditioned state (reviewerState.ts) → behaviour targets (reviewerBehavior.ts) → springs → rig (ReviewerStage.tsx)`.
+Pipeline: `video → CORTEX run → cohort-conditioned state (reviewerState.ts) → behaviour targets (reviewerBehavior.ts) → springs → rig (rig.ts, ReviewerStage.tsx)`.
 
-**Rig.** Four stylised characters (`characters.ts`) share one procedural skeleton (body → neck → head → eyes/pupils/brows) and one geometry set, rendered in one orthographic R3F canvas with per-slot clipping planes. Variants differ only in proportions, palette, hair and accessories.
+**Rig.** Four stylised characters ship in one asset, `public/models/reviewers.glb`. Each one has the same bone and shape-key contract: bones `Chest → Neck → Head → Eye_L/Eye_R`, and shape keys `blink_L/R, wide, browDown, browUp, mouthOpen`. All four render in one shared R3F canvas, one scissored viewport and perspective camera per rail slot.
 
 **CORTEX layer** (deterministic, from cohort state at the playhead `t`, all clamped to [0, 1]):
 
@@ -186,20 +186,22 @@ tension        = (load(t) − capacity_c) / 0.6               (the model's load-
 fracture       = env(t) · lossShare_c / 0.15                 env ramps in 0.35 s before the window, decays 0.6 s after
 
 disengage = clamp(0.65·withdrawal + 0.8·fracture)
-head yaw   = −0.38 + 0.66·disengage          (toward content → turned away)
-head pitch = −0.02 + 0.24·disengage − 0.10·orientingOnset
-torso lean = −0.10·attention + 0.10·disengage (forward engagement vs. sitting back)
+head yaw   = −0.24 + 0.85·disengage − 0.08·orientingOnset   (toward content → turned away; plus a fixed −0.32 rad 3/4 bust turn)
+head pitch = −0.02 + 0.22·disengage − 0.08·orientingOnset − 0.05·tension
+torso lean = −0.08·attention + 0.10·disengage − 0.04·tension (forward engagement vs. sitting back)
 eye aperture = 0.72 + 0.28·attention − 0.30·disengage + 0.20·orientingOnset
-gaze (x, y)  = toward content when engaged, away/down with disengage; small lift on orientingOnset
+gaze (x, y)  = toward content when engaged, away/down with disengage; quick shift + lift on orientingOnset
+               (eyes use a stiff spring and the head a soft one, so the eyes orient first and the head then corrects)
+head drift amplitude   = 0.10·(1 − attention) rad
 saccade amplitude gain = 0.15 + 0.85·(1 − attention)   (gaze stability)
 blink-rate gain        = 0.8 + 1.4·(1 − attention)
 brow lowering/narrowing = tension; brow lift = orientingOnset
 presence (brightness)   = 0.70 + 0.30·survival (+ selection highlight)
 ```
 
-**Idle layer** (separate, seeded mulberry32 per cohort, bounded): breathing, blink timing, saccade timing/direction, micro head sway. It runs continuously so reviewers stay subtly alive; CORTEX only sets its gains (saccade amplitude, blink rate). `prefers-reduced-motion` disables it.
+**Idle layer** (separate, seeded mulberry32 per cohort, bounded): breathing, blink timing (occasional double blinks), saccade timing/direction, slow head sway, posture shifts and mouth micro-movement. It runs continuously so reviewers stay subtly alive. CORTEX only sets its gains: saccade amplitude, blink rate and head-drift amplitude. `prefers-reduced-motion` disables it.
 
-**Model-state coupling** (`CouplingOverlay.tsx`): conduits from the central CORTEX view to each reviewer. Intensity = `(0.05 + 0.08·attention·survival)·dim + 0.4·selected + 0.55·fracture`; colour shifts toward the fracture hue with `fracture`; pulses are emitted only when `|Δattention| + |Δwithdrawal| + |Δfracture|` accumulates past 0.035 while the playhead moves. It depicts shared computed state, not a biological signal path.
+**Model-state coupling** (`CouplingOverlay.tsx`): conduits run from the central CORTEX view to a port at the outer edge of each reviewer row, never over the avatar. Intensity = `(0.035 + 0.05·attention·survival)·dim + 0.42·selected + 0.6·fracture`; colour shifts toward the fracture hue with `fracture`; pulses are emitted only when `|Δattention| + |Δwithdrawal| + |Δfracture|` accumulates past 0.035 while the playhead moves. It depicts shared computed state, not a biological signal path.
 
 Mapping gains are Tier D presentation choices; the inputs are Tier C. Nothing is scripted per cohort: a different video yields different reactions.
 

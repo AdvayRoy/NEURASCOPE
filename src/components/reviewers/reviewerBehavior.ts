@@ -15,6 +15,8 @@ export interface ReviewerBehavior {
   gazeY: number;
   /** Saccade amplitude multiplier for the idle layer (gaze stability ↓ as attention ↓). */
   wander: number;
+  /** Amplitude (radians) of slow head drift added by the idle layer; grows as attention falls. */
+  drift: number;
   /** Blink-rate multiplier for the idle layer. */
   blinkRate: number;
   /** Brow lowering / narrowing from load above capacity, 0..1. */
@@ -32,13 +34,14 @@ const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 export function reviewerBehavior(r: ReviewerState): ReviewerBehavior {
   const disengage = clamp(0.65 * r.withdrawal + 0.8 * r.fracture, 0, 1);
   return {
-    yaw: -0.38 + 0.66 * disengage,
-    pitch: -0.02 + 0.24 * disengage - 0.1 * r.orientingOnset,
-    lean: -0.1 * r.attention + 0.1 * disengage,
+    yaw: -0.24 + 0.85 * disengage - 0.08 * r.orientingOnset,
+    pitch: -0.02 + 0.22 * disengage - 0.08 * r.orientingOnset - 0.05 * r.tension,
+    lean: -0.08 * r.attention + 0.1 * disengage - 0.04 * r.tension,
     eyeOpen: clamp(0.72 + 0.28 * r.attention - 0.3 * disengage + 0.2 * r.orientingOnset, 0.35, 1.08),
-    gazeX: -0.75 * (1 - disengage) + 0.55 * disengage,
+    gazeX: -0.75 * (1 - disengage) + 0.55 * disengage - 0.5 * r.orientingOnset,
     gazeY: -0.55 * disengage + 0.35 * r.orientingOnset,
     wander: 0.15 + 0.85 * (1 - r.attention),
+    drift: 0.1 * (1 - r.attention),
     blinkRate: 0.8 + 1.4 * (1 - r.attention),
     browTension: r.tension,
     browRaise: r.orientingOnset,

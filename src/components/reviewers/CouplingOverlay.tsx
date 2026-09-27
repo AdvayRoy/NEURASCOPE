@@ -17,6 +17,7 @@ const bez = (a: P, b: P, c: P, d: P, t: number): P => {
 
 /**
  * Model-state coupling: thin conduits from the central CORTEX view to each synthetic reviewer.
+ * Each conduit terminates in a port at the outer edge of its reviewer row, never over the avatar.
  * Both ends are projections of the same computed cohort state; this is not a biological signal path.
  * Link intensity = cohort attention × survival (+ selection, + cohort fracture response); pulses are emitted only when that state changes.
  */
@@ -26,6 +27,7 @@ export function CouplingOverlay() {
     const root = svg.current;
     if (!root) return;
     const paths = Array.from(root.querySelectorAll<SVGPathElement>("[data-link]"));
+    const ports = Array.from(root.querySelectorAll<SVGGElement>("[data-port]"));
     const dots = Array.from(root.querySelectorAll<SVGCircleElement>("[data-pulse]"));
     const prev = COHORTS.map(() => ({ a: 0, w: 0, f: 0, acc: 0, t: -1 }));
     const pulses: { c: number; born: number }[] = [];
@@ -56,12 +58,11 @@ export function CouplingOverlay() {
         const brain = document.querySelector("[data-brain-stage]")?.getBoundingClientRect();
         const rail = document.querySelector("[data-reviewer-rail]")?.getBoundingClientRect();
         geo = COHORTS.map((c) => {
-          const el = document.querySelector(`[data-reviewer-anchor="${c.id}"]`)?.getBoundingClientRect();
+          const el = document.querySelector(`[data-reviewer-row="${c.id}"]`)?.getBoundingClientRect();
           if (!brain || !rail || !el || el.width === 0) return null;
           const a: P = [brain.left - host.left + brain.width * 0.74, brain.top - host.top + brain.height * 0.46];
-          const d: P = [rail.left - host.left + 1, el.top - host.top + el.height * 0.5];
-          const dx = d[0] - a[0];
-          return { a, b: [a[0] + dx * 0.55, a[1]] as P, c: [d[0] - dx * 0.4, d[1]] as P, d };
+          const d: P = [el.left - host.left - 1, el.top - host.top + el.height * 0.5];
+          return { a, b: [d[0] - 70, a[1]] as P, c: [d[0] - 46, d[1]] as P, d };
         }).filter((g): g is { a: P; b: P; c: P; d: P } => g !== null);
       }
       if (geo.length !== COHORTS.length) return;
@@ -77,7 +78,7 @@ export function CouplingOverlay() {
         }
         const selected = s.cohort === c;
         const dim = s.cohort !== null && !selected ? 0.4 : 1;
-        const k = Math.min(1, (0.05 + 0.08 * r.attention * r.survival) * dim + (selected ? 0.4 : 0) + 0.55 * r.fracture);
+        const k = Math.min(1, (0.035 + 0.05 * r.attention * r.survival) * dim + (selected ? 0.42 : 0) + 0.6 * r.fracture);
         if (pv.acc > 0.035 && k > 0.15) {
           pv.acc = 0;
           if (pulses.length < PULSES * COHORTS.length) pulses.push({ c, born: now });
@@ -89,6 +90,11 @@ export function CouplingOverlay() {
         p.setAttribute("stroke", `rgba(${col},${k.toFixed(3)})`);
         p.setAttribute("stroke-width", (0.6 + 0.9 * k).toFixed(2));
         p.dataset.intensity = k.toFixed(3);
+        const port = ports[c];
+        port.setAttribute("transform", `translate(${g.d[0]},${g.d[1]})`);
+        port.setAttribute("color", `rgb(${col})`);
+        port.setAttribute("opacity", Math.min(1, 0.25 + 1.4 * k).toFixed(3));
+        (port.firstElementChild as SVGCircleElement).setAttribute("r", (3 + 4 * k).toFixed(2));
       });
       for (let i = pulses.length - 1; i >= 0; i--) if (now - pulses[i].born > TRAVEL) pulses.splice(i, 1);
       dots.forEach((dot, i) => {
@@ -112,6 +118,12 @@ export function CouplingOverlay() {
     <svg ref={svg} data-testid="coupling-overlay" className="pointer-events-none absolute inset-0 z-[5] h-full w-full" aria-hidden>
       {COHORTS.map((c) => (
         <path key={c.id} data-link={c.id} fill="none" stroke="transparent" strokeLinecap="round" />
+      ))}
+      {COHORTS.map((c) => (
+        <g key={c.id} data-port={c.id} opacity={0}>
+          <circle r={4} fill="currentColor" opacity={0.18} />
+          <circle r={1.9} fill="currentColor" />
+        </g>
       ))}
       {Array.from({ length: PULSES * COHORTS.length }, (_, i) => (
         <circle key={i} data-pulse r={1.8} fill="#dfe8ff" opacity={0} />

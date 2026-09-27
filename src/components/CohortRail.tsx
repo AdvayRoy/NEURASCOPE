@@ -5,7 +5,7 @@ import { sampleAt } from "@/lib/cortex/simulate";
 import { useLab } from "@/lib/state/store";
 import { Tier } from "./Tier";
 import { ReviewerStage } from "./reviewers/ReviewerStage";
-import { REVIEWER_ACCENT } from "./reviewers/characters";
+import { REVIEWER_ACCENT } from "./reviewers/rig";
 import { GlBoundary } from "./GlBoundary";
 
 function Spark({ data, cf, duration, time, fr, W = 88, H = 26 }: { data: Float32Array; cf?: Float32Array; duration: number; time: number; fr?: { start: number; end: number }; W?: number; H?: number }) {
@@ -63,11 +63,11 @@ export function CohortRail() {
         </span>
         <span className="num w-9 text-right text-[12px] text-fg">{Math.round(sampleAt(run.sim.retention, hz, time) * 100)}%</span>
       </button>
-      <div className="relative">
+      <div className="relative overflow-hidden rounded-lg border border-line bg-[#0f1013]">
         <GlBoundary>
           <ReviewerStage slots={slots} />
         </GlBoundary>
-        <ul className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-1.5">
+        <ul className="divide-y divide-line/70">
           {COHORTS.map((c, i) => {
             const on = cohort === i;
             const impact = fr ? fr.cohorts.find((x) => x.cohort === c.id) : null;
@@ -76,25 +76,24 @@ export function CohortRail() {
               <li key={c.id}>
                 <button
                   data-testid={`reviewer-${c.id}`}
+                  data-reviewer-row={c.id}
                   aria-pressed={on}
                   onClick={() => set({ cohort: on ? null : i })}
-                  className={`relative block w-full overflow-hidden rounded-md border text-left transition-colors ${on ? "border-line-2 bg-[#17181b]" : "border-line hover:border-line-2"}`}
+                  className={`relative grid h-[78px] w-full grid-cols-[88px_minmax(0,1fr)] items-stretch text-left transition-colors ${on ? "bg-fg/[0.055]" : "hover:bg-fg/[0.025]"}`}
                 >
-                  <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: REVIEWER_ACCENT[c.id], opacity: on ? 1 : 0.7 }} aria-hidden />
-                  <div ref={slots[i]} data-reviewer-anchor={c.id} className="h-[80px] w-full bg-[radial-gradient(ellipse_at_50%_35%,rgba(255,255,255,0.05),transparent_70%)]" aria-hidden />
-                  <div className="px-2 pt-1 pb-1.5">
-                    <div className="flex items-baseline justify-between gap-1">
-                      <span title={c.label} className={`truncate text-[11px] ${on ? "text-fg" : "text-fg-2"}`}>{c.label}</span>
-                      <span className="num text-[11.5px] text-fg">{Math.round(sampleAt(data, hz, time) * 100)}%</span>
+                  <span className="absolute inset-y-2 left-0 w-[2px] rounded-r" style={{ background: REVIEWER_ACCENT[c.id], opacity: on ? 1 : 0.55 }} aria-hidden />
+                  <div ref={slots[i]} data-reviewer-anchor={c.id} className="h-full w-full" style={{ background: `radial-gradient(circle at 50% 48%, ${REVIEWER_ACCENT[c.id]}${on ? "26" : "14"}, transparent 68%)` }} aria-hidden />
+                  <div className="flex min-w-0 flex-col justify-center gap-[3px] py-1.5 pr-3 pl-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className={`text-[12px] leading-tight whitespace-nowrap ${on ? "text-fg" : "text-fg-2"}`}>{c.label}</span>
+                      <span className="num text-[12px] text-fg">{Math.round(sampleAt(data, hz, time) * 100)}%</span>
                     </div>
-                    <div className="mt-0.5 flex items-center justify-between gap-1">
-                      <span className="truncate text-[9.5px] text-fg-3">
-                        {impact ? <span className="text-fracture/90">−{Math.round(impact.lossShare * 100)}% across {fr!.id}</span> : `${Math.round((run.sim.cohortCounts[i] / run.sim.size) * 100)}% of audience`}
-                      </span>
-                      <span className={on ? "text-fg" : "text-fg-3"}>
-                        <Spark data={data} cf={cf?.run.sim.retentionByCohort[i]} duration={d} time={time} fr={fr} W={44} H={12} />
-                      </span>
+                    <div className="text-[10px] leading-tight text-fg-3">
+                      {impact ? <span className="text-fracture/90">−{Math.round(impact.lossShare * 100)}% across {fr!.id}</span> : `${Math.round((run.sim.cohortCounts[i] / run.sim.size) * 100)}% of audience`}
                     </div>
+                    <span className={on ? "text-fg" : "text-fg-3"}>
+                      <Spark data={data} cf={cf?.run.sim.retentionByCohort[i]} duration={d} time={time} fr={fr} W={150} H={12} />
+                    </span>
                   </div>
                 </button>
               </li>

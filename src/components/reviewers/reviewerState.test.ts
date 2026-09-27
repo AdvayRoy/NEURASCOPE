@@ -42,5 +42,6 @@ describe("reviewerBehavior", () => {
     const lo = reviewerBehavior({ ...s, attention: 0.1 });
     expect(lo.wander).toBeGreaterThan(hi.wander);
     expect(lo.blinkRate).toBeGreaterThan(hi.blinkRate);
+    expect(lo.drift).toBeGreaterThan(hi.drift);
   });
 });
