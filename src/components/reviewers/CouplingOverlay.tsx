@@ -10,9 +10,12 @@ const SIGNAL = [143, 179, 255];
 const FRACTURE = [255, 122, 69];
 
 type P = [number, number];
-const bez = (a: P, b: P, c: P, d: P, t: number): P => {
-  const u = 1 - t;
-  return [u * u * u * a[0] + 3 * u * u * t * b[0] + 3 * u * t * t * c[0] + t * t * t * d[0], u * u * u * a[1] + 3 * u * u * t * b[1] + 3 * u * t * t * c[1] + t * t * t * d[1]];
+/** Orthogonal conduit with rounded corners: out of the brain, up the gutter beside the legend, into the row port. */
+const route = (a: P, x: number, d: P) => {
+  const dy = d[1] - a[1];
+  const sg = Math.sign(dy) || 1;
+  const r = Math.max(0, Math.min(14, Math.abs(dy) / 2, d[0] - x, x - a[0]));
+  return `M${a[0]},${a[1]} L${x - r},${a[1]} Q${x},${a[1]} ${x},${a[1] + sg * r} L${x},${d[1] - sg * r} Q${x},${d[1]} ${x + r},${d[1]} L${d[0]},${d[1]}`;
 };
 
 /**
@@ -33,7 +36,7 @@ export function CouplingOverlay() {
     const pulses: { c: number; born: number }[] = [];
     let raf = 0;
     let geomAge = 1e9;
-    let geo: { a: P; b: P; c: P; d: P }[] = [];
+    let geo: { d: P; path: string }[] = [];
     let last = performance.now();
     let base: number | null = null;
     let baseRun: unknown = null;
@@ -57,13 +60,17 @@ export function CouplingOverlay() {
         const host = root.getBoundingClientRect();
         const brain = document.querySelector("[data-brain-stage]")?.getBoundingClientRect();
         const rail = document.querySelector("[data-reviewer-rail]")?.getBoundingClientRect();
-        geo = COHORTS.map((c) => {
+        const legend = document.querySelector("[data-network-legend]")?.getBoundingClientRect();
+        geo = COHORTS.map((c, i) => {
           const el = document.querySelector(`[data-reviewer-row="${c.id}"]`)?.getBoundingClientRect();
           if (!brain || !rail || !el || el.width === 0) return null;
-          const a: P = [brain.left - host.left + brain.width * 0.74, brain.top - host.top + brain.height * 0.46];
           const d: P = [el.left - host.left - 1, el.top - host.top + el.height * 0.5];
-          return { a, b: [d[0] - 70, a[1]] as P, c: [d[0] - 46, d[1]] as P, d };
-        }).filter((g): g is { a: P; b: P; c: P; d: P } => g !== null);
+          const floor = legend && legend.height > 0 ? legend.bottom - host.top + 18 : 0;
+          const a: P = [brain.left - host.left + brain.width * 0.7, Math.max(brain.top - host.top + brain.height * 0.5, floor) + 6 * i];
+          const gutter = legend && legend.width > 0 ? (legend.right + el.left) / 2 - host.left : d[0] - 18;
+          const x = Math.min(gutter + 2 * i - 3, d[0] - 8);
+          return { d, path: route(a, x, d) };
+        }).filter((g): g is { d: P; path: string } => g !== null);
       }
       if (geo.length !== COHORTS.length) return;
       COHORTS.forEach((_, c) => {
@@ -86,7 +93,7 @@ export function CouplingOverlay() {
         const col = SIGNAL.map((v, i) => Math.round(v + (FRACTURE[i] - v) * Math.min(1, r.fracture * 1.4))).join(",");
         const g = geo[c];
         const p = paths[c];
-        p.setAttribute("d", `M${g.a[0]},${g.a[1]} C${g.b[0]},${g.b[1]} ${g.c[0]},${g.c[1]} ${g.d[0]},${g.d[1]}`);
+        if (p.getAttribute("d") !== g.path) p.setAttribute("d", g.path);
         p.setAttribute("stroke", `rgba(${col},${k.toFixed(3)})`);
         p.setAttribute("stroke-width", (0.6 + 0.9 * k).toFixed(2));
         p.dataset.intensity = k.toFixed(3);
@@ -103,11 +110,11 @@ export function CouplingOverlay() {
           dot.setAttribute("opacity", "0");
           return;
         }
-        const g = geo[pl.c];
+        const path = paths[pl.c];
         const u = (now - pl.born) / TRAVEL;
-        const [x, y] = bez(g.a, g.b, g.c, g.d, u);
-        dot.setAttribute("cx", x.toFixed(1));
-        dot.setAttribute("cy", y.toFixed(1));
+        const pt = path.getPointAtLength(u * path.getTotalLength());
+        dot.setAttribute("cx", pt.x.toFixed(1));
+        dot.setAttribute("cy", pt.y.toFixed(1));
         dot.setAttribute("opacity", (Math.sin(u * Math.PI) * Math.max(0.35, Number(paths[pl.c].dataset.intensity ?? 0))).toFixed(3));
       });
     };
