@@ -84,7 +84,6 @@ function Brain({ asset, interactive }: { asset: BrainAsset; interactive: boolean
       const isc = sampleAt(src.eeg.isc, src.sim.hz, s.time);
       const k = Math.min(1, Math.max(0, (isc - 0.12) / 0.23));
       for (let r = 0; r < asset.regions.length; r++) {
-        if (!map[r].length) continue;
         target[4 * r] = k;
         target[4 * r + 1] = 1;
       }
