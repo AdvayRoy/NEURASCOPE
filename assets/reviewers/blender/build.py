@@ -276,6 +276,10 @@ def build_bust(P, part, cloth):
                 q = abs(p.x) - (0.2 + 0.9 * (0.22 - y))
                 fold = math.exp(-(q / 0.03) ** 2) * ss(0.02, 0.12, y) * ss(0.24, 0.18, y)
                 p -= V(p.x, 0, p.z).normalized() * 0.012 * fold
+                if P.get("hoodfold"):
+                    q2 = p.x + 0.06 - 0.6 * (0.2 - y)
+                    f2 = math.exp(-(q2 / 0.022) ** 2) * ss(0.03, 0.1, y) * ss(0.22, 0.15, y)
+                    p -= V(p.x, 0, p.z).normalized() * 0.01 * f2
             verts.append(p)
     faces = grid_faces(nseg, nrow, True)
     faces = [tuple(reversed(f)) for f in faces]
@@ -586,7 +590,7 @@ def build_mouth(P, hd, part):
         for k in range(n):
             u = 2 * k / (n - 1) - 1
             x = u * lerp(mw * 0.9, P["smileW"], sm)
-            yu = (my + 0.002 * u * u + sm * (0.014 * u * u + 0.016 * abs(u) ** 4 + P["masym"] * max(u, 0) ** 2)
+            yu = (my + 0.002 * u * u + P["clift"] * abs(u) ** 3 * (0.5 + 0.5 * sm) + sm * (0.014 * u * u + 0.016 * abs(u) ** 4 + P["masym"] * max(u, 0) ** 2)
                   - sm * P["mopen"] * 0.12)
             th = (lerp(0.006, P["mthick"] + 0.003, sm) + sm * P["mopen"] + extra) * (1 - u * u) ** 0.7 + 0.0014
             rows.append((x, yu, th))
@@ -727,7 +731,7 @@ def base_params():
         back=0.04, crown=0.0, temple=0.04, hy=0.635, res=12,
         smileW=0.1, er=0.045, eyeV=1.35, ex=0.112, ey=-0.03, eyeIn=0.62, eyeD=0.7, tilt=0, lidU=42, lidL=16, lash=False, nbx=0.03, nbz=0.025,
         sock=0.009, ridge=0.011, nose=0.03, nsx=0.03, nsy=0.024, ny=-0.118, muzzle=0.008, chinBall=0.005,
-        cheekPuff=0.014, mw=0.04, my=-0.18, mcurve=0.01, mthick=0.007, mopen=0.0, masym=0.0, mcorner=0.004,
+        cheekPuff=0.014, mw=0.04, my=-0.18, mcurve=0.01, mthick=0.007, mopen=0.0, masym=0.0, clift=0.0, mcorner=0.004,
         browH=0.083, arch=0.006, browSlope=0.004, browW=0.015, shoulder=1.0, neck=0.066,
     )
 
@@ -781,6 +785,7 @@ def enthusiast():
              lidU=40, browH=0.083, browW=0.015, arch=0.004, browSlope=0.0, nbx=0.031, nbz=0.032, ny=-0.128, nose=0.04,
              mw=0.044, mcurve=0.009, mthick=0.008, my=-0.19, shoulder=1.04, neck=0.07)
     P["smileW"] = 0.082
+    P["clift"] = 0.007
     P["colors"] = dict(skin=(0.72, 0.53, 0.32), hair=(0.17, 0.1, 0.065), hair2=(0.17, 0.1, 0.065), cloth=(0.96, 0.95, 0.92),
                        mouth=(0.52, 0.2, 0.16), ghutra=(0.97, 0.96, 0.93), agal=(0.05, 0.05, 0.06), flush=(1.0, 0.86, 0.8),
                        lip=(0.9, 0.68, 0.64))
@@ -888,6 +893,7 @@ def make_armature(cid, eyes, g):
 def build_character(cid):
     P = CHARS[cid]()
     P["shoulder"] *= BUST_NARROW
+    P["hoodfold"] = cid in ("cold", "visual")
     col = P["colors"]
     pre = cid + "_"
     P["mat_skin"] = pre + "skin"; material(P["mat_skin"], col["skin"], 0.75, vcol=True)
@@ -895,7 +901,7 @@ def build_character(cid):
     P["mat_lid"] = P["mat_skin"]
     P["mat_nose"] = pre + "nose"; material(P["mat_nose"], tuple(min(1, c * k) for c, k in zip(col["skin"], (1.03, 0.94, 0.9))), 0.55)
     P["mat_brow"] = pre + "brow"; material(P["mat_brow"], tuple(c * 0.8 for c in col["hair"]), 0.8)
-    P["mat_mouth"] = pre + "mouth"; material(P["mat_mouth"], col["mouth"], 0.6)
+    P["mat_mouth"] = pre + "mouth"; material(P["mat_mouth"], tuple(c * 0.78 for c in col["mouth"]), 0.6)
     P["mat_hair"] = pre + "hair"; material(P["mat_hair"], col["hair"], 0.62)
     P["mat_hair2"] = pre + "hair2"; material(P["mat_hair2"], col["hair2"], 0.66)
     P["mat_cloth"] = pre + "cloth"; material(P["mat_cloth"], col["cloth"], 0.85)
@@ -985,9 +991,10 @@ def style_cold(P, hd, hair, body, face):
         return (c * math.cos(th) + (e1 * math.cos(ph) + e2 * math.sin(ph)) * math.sin(th)).normalized()
 
     # big soft curl clumps: (azimuth, polar angle from crown, amplitude)
-    clumps = [(0, 0.0, 0.07, 0.4), (62, 0.78, 0.13, 0.45), (124, 0.82, 0.115, 0.44), (236, 0.82, 0.115, 0.44), (298, 0.78, 0.13, 0.45),
-              (0, 0.6, 0.07, 0.36), (180, 0.6, 0.065, 0.38), (-26, 1.2, 0.07, 0.36), (24, 1.32, 0.06, 0.32), (90, 1.42, 0.075, 0.38),
-              (270, 1.42, 0.075, 0.38), (150, 1.25, 0.055, 0.34), (210, 1.25, 0.055, 0.34)]
+    clumps = [(0, 0.0, 0.02, 0.36), (62, 0.8, 0.06, 0.4), (124, 0.84, 0.055, 0.4), (236, 0.84, 0.05, 0.4), (298, 0.8, 0.06, 0.4),
+              (-40, 0.42, 0.09, 0.25), (35, 0.28, 0.085, 0.23), (160, 0.36, 0.07, 0.25),
+              (0, 0.6, 0.07, 0.36), (180, 0.6, 0.065, 0.38), (-26, 1.2, 0.07, 0.36), (24, 1.32, 0.06, 0.32), (90, 1.42, 0.045, 0.34),
+              (270, 1.42, 0.045, 0.34), (150, 1.25, 0.045, 0.34), (210, 1.25, 0.045, 0.34)]
     cd = [(cdir(az, th), amp, R) for az, th, amp, R in clumps]
 
     frames = []
@@ -1014,7 +1021,7 @@ def style_cold(P, hd, hair, body, face):
         return h * part
 
     cap(hd, pole, lambda p, d: p.y > hl(p), H, 50, 15, hair, P["mat_hair"], edge_keep=0.75)
-    for k, (fx, fyo, sz) in enumerate(((-0.115, 0.156, 0.026), (-0.03, 0.138, 0.036), (0.07, 0.158, 0.024))):
+    for k, (fx, fyo, sz) in enumerate(((-0.115, 0.156, 0.026), (-0.035, 0.128, 0.046), (0.07, 0.158, 0.024))):
         loc, nrm = hd.front(fx, hd.C.y + ey + fyo)
         fwd = V(nrm.x, 0, nrm.z).normalized()
         c0 = loc + fwd * (0.035 + sz * 0.3)
@@ -1023,7 +1030,7 @@ def style_cold(P, hd, hair, body, face):
             t = q / 8
             a = lerp(-0.3, 3.6, t) + 0.3 * k
             pts.append(c0 + (V(0, 1, 0) * math.cos(a) + fwd * math.sin(a)) * sz + V(0.012 * t * (1 if fx > 0 else -1), 0, 0))
-            w = 0.028 * (0.8 + 0.2 * math.sin(math.pi * t))
+            w = (0.028 + 0.008 * (k == 1)) * (0.8 + 0.2 * math.sin(math.pi * t))
             A.append(w * 1.2); B.append(w)
             nr.append(fwd)
         v, f = tube(pts, A, B, ring=8, normals=nr)
