@@ -36,7 +36,13 @@ function OrianeContext({ ev }: { ev: CorpusResult | "pending" | undefined }) {
           <span className="num">{ev.items.length}</span> relevant published {ev.items.length === 1 ? "video" : "videos"}
         </div>
         <span className="text-[11px] text-fg-3">
-          matched by {[ev.retrieval.visual ? "visual similarity" : null, ev.retrieval.terms.length ? "spoken content" : null].filter(Boolean).join(" + ")}
+          matched by{" "}
+          {[
+            ev.items.some((i) => i.matchedBy.includes("visual")) ? "visual similarity" : null,
+            ev.items.some((i) => i.matchedBy.includes("transcript")) ? "spoken content" : null,
+          ]
+            .filter(Boolean)
+            .join(" + ")}
         </span>
       </div>
       {thumbs.length > 0 && (
@@ -96,7 +102,7 @@ function Body() {
 
   const jump = () => {
     select(fr.id);
-    set({ brief: false });
+    set({ brief: false, activeCf: cf ? cf.intervention.id : null });
   };
   const simulate = () => {
     if (!b.recommended) return;

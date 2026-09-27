@@ -81,6 +81,7 @@ test("fixture → analysis → playback → scrub → cohort → fracture → ev
   await brief.getByTestId("brief-jump").click();
   await expect(brief).toBeHidden();
   await expect(page.getByText(`ATTENTION FRACTURE ${primary}`)).toBeVisible();
+  await expect(page.getByText(/^COUNTERFACTUAL · /)).toBeVisible();
 
   // Refresh restores the prior completed analysis with its provenance.
   await page.reload();
