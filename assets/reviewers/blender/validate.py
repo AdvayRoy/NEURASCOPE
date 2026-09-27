@@ -59,6 +59,8 @@ for ni in scene["nodes"]:
         if "mesh" in n:
             me = g["meshes"][n["mesh"]]
             morphs |= set(me.get("extras", {}).get("targetNames", []))
+            if any(w != 0 for w in me.get("weights", [])):
+                fail(me["name"] + " default morph weights must be 0")
             for p in me["primitives"]:
                 tris += g["accessors"][p["indices"]]["count"] // 3
                 a = g["accessors"][p["attributes"]["POSITION"]]

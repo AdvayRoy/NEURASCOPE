@@ -148,6 +148,7 @@ if MODE in ("strip", "all"):
         aim(25, target, frame_h, dist=4.0)
         render(os.path.join(OUT, f"tile_{cid}.png"), TILE_W, TILE_H)
         render(os.path.join(OUT, f"tile2x_{cid}.png"), TILE_W * 2, TILE_H * 2)
+        set_keys(cid, {})
 
 if MODE in ("rig", "all"):
     states = [("neutral", {}, (0, 0)), ("blink", {"blink_L": 1, "blink_R": 1}, (0, 0)), ("half blink", {"blink_L": 0.5, "blink_R": 0.5}, (0, 0)),
