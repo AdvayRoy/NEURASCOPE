@@ -1,133 +1,164 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { COHORTS } from "@/lib/cortex/params";
 import { useLab } from "@/lib/state/store";
+import { buildReviewer, HEAD_Y } from "./characters";
+import { reviewerBehavior } from "./reviewerBehavior";
 import { hazardReference, reviewerState } from "./reviewerState";
 
-let headPromise: Promise<THREE.BufferGeometry> | null = null;
-
-/** Shared head geometry (Lee Perry-Smith scan, CC BY 3.0), centred and normalised to unit height. */
-function loadHead() {
-  headPromise ??= new GLTFLoader()
-    .loadAsync("/models/reviewer.glb")
-    .then((g) => {
-      let geo: THREE.BufferGeometry | null = null;
-      g.scene.traverse((o) => {
-        if (!geo && (o as THREE.Mesh).isMesh) geo = (o as THREE.Mesh).geometry;
-      });
-      if (!geo) throw new Error("Reviewer model has no mesh");
-      const out = (geo as THREE.BufferGeometry).clone();
-      out.deleteAttribute("uv");
-      out.computeBoundingBox();
-      const b = out.boundingBox!;
-      const c = b.getCenter(new THREE.Vector3());
-      out.translate(-c.x, -c.y, -c.z);
-      out.scale(1 / (b.max.y - b.min.y), 1 / (b.max.y - b.min.y), 1 / (b.max.y - b.min.y));
-      return out;
-    })
-    .catch((e: unknown) => {
-      headPromise = null;
-      throw e;
-    });
-  return headPromise;
-}
-
-function createReviewerMaterial() {
-  const uniforms = { uRim: { value: 0.5 }, uFracture: { value: 0 }, uTension: { value: 0 } };
-  const mat = new THREE.MeshStandardMaterial({ color: "#d9d3c7", roughness: 0.62, metalness: 0, transparent: true, opacity: 1 });
-  mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vRN;\nvarying vec3 vRV;")
-      .replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\nvRN = normalize(normalMatrix * normal);\nvRV = normalize(-(modelViewMatrix * vec4(position,1.0)).xyz);",
-      );
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform float uRim; uniform float uFracture; uniform float uTension;\nvarying vec3 vRN; varying vec3 vRV;")
-      .replace(
-        "#include <color_fragment>",
-        `#include <color_fragment>
-float fr = pow(1.0 - clamp(dot(normalize(vRN), normalize(vRV)), 0.0, 1.0), mix(2.6, 1.6, uTension));
-vec3 rimCol = mix(vec3(0.56, 0.70, 1.0), vec3(1.0, 0.48, 0.27), uFracture);
-diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.82, uTension * 0.5);
-diffuseColor.rgb += rimCol * fr * uRim;`,
-      );
+/** Seeded PRNG for the idle layer (mulberry32). */
+function prng(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  return { material: mat, uniforms };
 }
 
-const VIEW_YAW = -0.32;
-const VIEW_PITCH = 0.06;
+/** Critically damped spring toward a target. */
+class Spring {
+  v = 0;
+  constructor(public x: number, private readonly k = 60) {}
+  step(target: number, dt: number) {
+    const c = 2 * Math.sqrt(this.k);
+    this.v += (this.k * (target - this.x) - c * this.v) * dt;
+    this.x += this.v * dt;
+    return this.x;
+  }
+}
 
-function Reviewer({ geometry, cohort, slot }: { geometry: THREE.BufferGeometry; cohort: number; slot: RefObject<HTMLDivElement | null> }) {
-  const { material, uniforms } = useMemo(() => createReviewerMaterial(), []);
-  const gaze = useMemo(() => new THREE.MeshBasicMaterial({ color: "#8fb3ff", transparent: true, opacity: 0, depthWrite: false }), []);
-  useEffect(() => () => {
-    material.dispose();
-    gaze.dispose();
-  }, [material, gaze]);
-  const place = useRef<THREE.Group>(null);
-  const head = useRef<THREE.Group>(null);
+const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function Reviewer({ cohort, slot, selected }: { cohort: number; slot: RefObject<HTMLDivElement | null>; selected: boolean }) {
+  const rig = useMemo(() => buildReviewer(COHORTS[cohort].id), [cohort]);
+  useEffect(() => () => rig.dispose(), [rig]);
   const gl = useThree((s) => s.gl);
-  const ray = useRef<THREE.Mesh>(null);
   const run = useLab((s) => s.run);
   const cf = useLab((s) => (s.activeCf ? s.counterfactuals[s.activeCf] : null));
   const src = cf?.run ?? run;
   const base = useMemo(() => (run ? hazardReference(run) : null), [run]);
-  useFrame((_, dt) => {
-    const g = head.current;
-    const p = place.current;
+  const sel = useRef(selected);
+  useEffect(() => {
+    sel.current = selected;
+  }, [selected]);
+
+  const anim = useMemo(() => {
+    const rnd = prng(0x5eed + cohort * 7919);
+    return {
+      rnd,
+      phase: rnd() * Math.PI * 2,
+      breathPeriod: 3.4 + rnd() * 1.2,
+      nextBlink: 0.5 + rnd() * 2,
+      blinkStart: -1,
+      nextSaccade: rnd(),
+      sacX: 0,
+      sacY: 0,
+      rect: { x: 0, y: 0, w: 0, h: 0 },
+      rectAge: 1e9,
+      still: reducedMotion(),
+      s: {
+        yaw: new Spring(-0.38, 40),
+        pitch: new Spring(0, 40),
+        lean: new Spring(0, 30),
+        open: new Spring(1, 90),
+        gx: new Spring(0, 160),
+        gy: new Spring(0, 160),
+        brow: new Spring(0, 60),
+        raise: new Spring(0, 80),
+        presence: new Spring(1, 20),
+        scale: new Spring(1, 60),
+      },
+    };
+  }, [cohort]);
+
+  useFrame(({ clock }, rawDt) => {
     const el = slot.current;
-    if (!g || !p || !el || !src || !base) return;
-    const c = gl.domElement.getBoundingClientRect();
-    const b = el.getBoundingClientRect();
-    p.visible = b.width > 0;
-    p.position.set(b.left + b.width / 2 - (c.left + c.width / 2), c.top + c.height / 2 - (b.top + b.height / 2) - b.height * 0.04, 0);
-    p.scale.setScalar(b.height * 0.92);
-    const t = useLab.getState().time;
-    const r = reviewerState(src, cohort, t, base);
-    const disengage = Math.min(1, 0.6 * r.withdrawal + 0.7 * r.fracture);
-    const instability = (1 - r.attention) * 0.05 * Math.sin(t * 1.7 + cohort * 2.1);
-    const yaw = VIEW_YAW - 0.6 * disengage + instability;
-    const pitch = VIEW_PITCH + 0.2 * disengage - 0.12 * r.orienting * r.attention;
-    const lean = 0.1 * (r.attention - 0.5) - 0.14 * disengage + 0.03 * r.orienting;
-    const a = 1 - Math.exp(-dt * 8);
-    g.rotation.y += (yaw - g.rotation.y) * a;
-    g.rotation.x += (pitch - g.rotation.x) * a;
-    g.position.y += (-0.04 * lean - g.position.y) * a;
-    g.rotation.z += (-0.08 * disengage - g.rotation.z) * a;
-    g.position.z += (lean - g.position.z) * a;
-    material.opacity += (0.28 + 0.72 * r.survival - material.opacity) * a;
-    uniforms.uRim.value += (0.18 + 0.5 * r.attention * r.survival - uniforms.uRim.value) * a;
-    uniforms.uFracture.value += (r.fracture - uniforms.uFracture.value) * a;
-    uniforms.uTension.value += (r.tension - uniforms.uTension.value) * a;
-    gaze.opacity += (0.55 * r.attention * r.survival * (1 - disengage) - gaze.opacity) * a;
-    if (ray.current) ray.current.scale.y += (0.3 + 0.7 * r.attention - ray.current.scale.y) * a;
+    if (!el || !src || !base) {
+      rig.root.visible = false;
+      return;
+    }
+    const dt = Math.min(0.05, rawDt);
+    const now = clock.elapsedTime;
+    const A = anim;
+    A.rectAge += dt;
+    if (A.rectAge > 0.25) {
+      const c = gl.domElement.getBoundingClientRect();
+      const b = el.getBoundingClientRect();
+      A.rect = { x: b.left + b.width / 2 - (c.left + c.width / 2), y: c.top + c.height / 2 - (b.top + b.height / 2), w: b.width, h: b.height };
+      A.rectAge = 0;
+    }
+    const { x, y, w, h } = A.rect;
+    rig.root.visible = w > 0;
+    rig.root.position.set(x, y, 0);
+    rig.planes[0].constant = -(y - h / 2);
+    rig.planes[1].constant = y + h / 2;
+    rig.planes[2].constant = -(x - w / 2);
+    rig.planes[3].constant = x + w / 2;
+
+    // CORTEX-driven layer: pure function of cohort state at the current video time.
+    const B = reviewerBehavior(reviewerState(src, cohort, useLab.getState().time, base));
+
+    // Idle layer: seeded, bounded, independent of CORTEX except for the documented gain terms (wander, blinkRate).
+    const idle = A.still ? 0 : 1;
+    if (now > A.nextSaccade) {
+      A.sacX = (A.rnd() * 2 - 1) * 0.35 * B.wander;
+      A.sacY = (A.rnd() * 2 - 1) * 0.25 * B.wander;
+      A.nextSaccade = now + (0.5 + A.rnd() * 1.4) / (0.6 + B.wander);
+    }
+    if (now > A.nextBlink && A.blinkStart < 0) {
+      A.blinkStart = now;
+      A.nextBlink = now + (2.2 + A.rnd() * 3.2) / B.blinkRate;
+    }
+    let blink = 0;
+    if (A.blinkStart >= 0) {
+      const u = (now - A.blinkStart) / 0.16;
+      blink = u < 1 ? Math.sin(u * Math.PI) : 0;
+      if (u >= 1) A.blinkStart = -1;
+    }
+    const breath = Math.sin((now / A.breathPeriod) * Math.PI * 2 + A.phase) * idle;
+    const swayY = (0.025 * Math.sin(now * 0.53 + A.phase) + 0.012 * Math.sin(now * 1.31 + A.phase * 2)) * idle;
+    const swayZ = 0.018 * Math.sin(now * 0.41 + A.phase * 3) * idle;
+
+    const S = A.s;
+    const yaw = S.yaw.step(B.yaw, dt);
+    const pitch = S.pitch.step(B.pitch, dt);
+    const lean = S.lean.step(B.lean, dt);
+    const open = S.open.step(B.eyeOpen, dt);
+    const gx = S.gx.step(B.gazeX + A.sacX * idle, dt);
+    const gy = S.gy.step(B.gazeY + A.sacY * idle, dt);
+    const brow = S.brow.step(B.browTension, dt);
+    const raise = S.raise.step(B.browRaise, dt);
+    const presence = S.presence.step(B.presence + (sel.current ? 0.12 : 0), dt);
+    const scale = S.scale.step(sel.current ? 1.06 : 1, dt);
+
+    rig.root.scale.setScalar(h * 0.98 * scale);
+    rig.body.rotation.x = lean;
+    rig.body.scale.set(1 + 0.008 * breath, 1 + 0.014 * breath, 1);
+    rig.head.rotation.set(pitch + 0.5 * lean, yaw + swayY, -0.35 * (yaw + 0.38) * 0.3 + swayZ);
+    rig.head.position.y = HEAD_Y + 0.006 * breath;
+    rig.head.position.z = 0.02 - 0.08 * lean;
+    for (const e of rig.eyes) e.scale.y = Math.max(0.06, open * (1 - 0.94 * blink));
+    for (const p of rig.pupils) p.position.set(0.06 * gx, 0.05 * gy, 0.1);
+    rig.brows.forEach((b, i) => {
+      const side = i === 0 ? 1 : -1;
+      b.position.y = 0.4 - 0.06 * brow + 0.08 * raise;
+      b.rotation.z = Math.PI / 2 - 0.12 * side - 0.22 * brow * side;
+    });
+    const k = Math.min(1.12, presence);
+    rig.materials.forEach((m, i) => m.color.copy(rig.baseColors[i]).multiplyScalar(k));
   });
 
-  return (
-    <group ref={place} visible={false}>
-      <group ref={head}>
-        <mesh geometry={geometry} material={material} />
-        <mesh ref={ray} material={gaze} position={[0, 0.1, 0.62]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.004, 0.004, 0.5, 6, 1, true]} />
-        </mesh>
-      </group>
-    </group>
-  );
+  return <primitive object={rig.root} />;
 }
 
-/** One shared WebGL canvas and scene; each reviewer head is placed over its DOM slot (orthographic, 1 unit = 1 CSS px). */
+/** One shared WebGL canvas and scene; each reviewer rig is placed over its DOM slot (orthographic, 1 unit = 1 CSS px). */
 export function ReviewerStage({ slots }: { slots: RefObject<HTMLDivElement | null>[] }) {
-  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    loadHead().then(setGeometry).catch(() => setFailed(true));
-  }, []);
-  if (failed) return null;
+  const cohort = useLab((s) => s.cohort);
   return (
     <Canvas
       className="pointer-events-none"
@@ -137,13 +168,16 @@ export function ReviewerStage({ slots }: { slots: RefObject<HTMLDivElement | nul
       camera={{ position: [0, 0, 400], zoom: 1, near: 1, far: 1000 }}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl }) => {
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMapping = THREE.NeutralToneMapping;
+        gl.localClippingEnabled = true;
       }}
     >
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[200, 250, 300]} intensity={1.6} color="#fff8ee" />
-      <directionalLight position={[-300, 100, -200]} intensity={0.9} color="#c9d6ff" />
-      {geometry && slots.map((s, i) => <Reviewer key={i} geometry={geometry} cohort={i} slot={s} />)}
+      <hemisphereLight args={["#fff6ea", "#3a3f4a", 1.7]} />
+      <directionalLight position={[-160, 220, 320]} intensity={2.9} color="#fff4e6" />
+      <directionalLight position={[260, 80, -120]} intensity={1.1} color="#c7d4ff" />
+      {slots.map((s, i) => (
+        <Reviewer key={i} cohort={i} slot={s} selected={cohort === i} />
+      ))}
     </Canvas>
   );
 }

@@ -166,21 +166,42 @@ Thresholds `FRACTURE` are all Tier D.
 
 Driver provenance (`DRIVER_META`): novelty (C; itti2009, ki2016), progression (C; cohen2017, ki2016), load (C; lang2000, jensen2002), static (D; madsen2021, bbbd2026, itti2009, neurascopeHeuristics — hand-set staticness rule), salience (C; lang2000, corbetta2002), payoff (D; neurascopeHeuristics, tong2020), habituation (D; itti2009, neurascopeHeuristics). Each fracture also cites ki2016 and cohen2017.
 
-## Synthetic reviewers — `src/components/reviewers/reviewerState.ts`
+## Synthetic reviewers — `src/components/reviewers/`
 
-Visual encoding only (label: "Synthetic behavioral expression · CORTEX visualization · not measured emotion"). All inputs are cohort CORTEX outputs at the playhead `t`; values are deterministic and clamped to [0, 1]:
+Visual encoding only (label: "Synthetic behavioral expression · CORTEX visualization · not measured emotion"). No emotion is inferred, labelled or measured.
+
+Pipeline: `video → CORTEX run → cohort-conditioned state (reviewerState.ts) → behaviour targets (reviewerBehavior.ts) → springs → rig (ReviewerStage.tsx)`.
+
+**Rig.** Four stylised characters (`characters.ts`) share one procedural skeleton (body → neck → head → eyes/pupils/brows) and one geometry set, rendered in one orthographic R3F canvas with per-slot clipping planes. Variants differ only in proportions, palette, hair and accessories.
+
+**CORTEX layer** (deterministic, from cohort state at the playhead `t`, all clamped to [0, 1]):
 
 ```
-attention  = A_c(t)                               → gaze-line length/opacity, forward lean
-survival   = R_c(t)                               → opacity 0.28 + 0.72·R, rim intensity
-withdrawal = log(H_c(t) / median_t H(t)) / log 6  → head turns away from the viewer, pitch down
-orienting  = (w_nov·novelty + w_sal·salience)/(w_nov + w_sal)   → small upward orienting tilt
-tension    = (load(t) − capacity_c) / 0.6         → sharper, cooler rim (the model's load-penalty term)
-fracture   = env(t) · lossShare_c / 0.15          → warm rim + extra turn-away; env ramps in 0.35 s before
-                                                    the fracture window and decays 0.6 s after it
+attention      = A_c(t)
+survival       = R_c(t)
+withdrawal     = log(H_c(t) / median_t H(t)) / log 6        (shared scale across cohorts, base run)
+orienting      = (w_nov·novelty + w_sal·salience)/(w_nov + w_sal)
+orientingOnset = (orienting(t) − orienting(t − 0.4 s)) / 0.15
+tension        = (load(t) − capacity_c) / 0.6               (the model's load-penalty term)
+fracture       = env(t) · lossShare_c / 0.15                 env ramps in 0.35 s before the window, decays 0.6 s after
+
+disengage = clamp(0.65·withdrawal + 0.8·fracture)
+head yaw   = −0.38 + 0.66·disengage          (toward content → turned away)
+head pitch = −0.02 + 0.24·disengage − 0.10·orientingOnset
+torso lean = −0.10·attention + 0.10·disengage (forward engagement vs. sitting back)
+eye aperture = 0.72 + 0.28·attention − 0.30·disengage + 0.20·orientingOnset
+gaze (x, y)  = toward content when engaged, away/down with disengage; small lift on orientingOnset
+saccade amplitude gain = 0.15 + 0.85·(1 − attention)   (gaze stability)
+blink-rate gain        = 0.8 + 1.4·(1 − attention)
+brow lowering/narrowing = tension; brow lift = orientingOnset
+presence (brightness)   = 0.70 + 0.30·survival (+ selection highlight)
 ```
 
-Mapping gains are Tier D presentation choices; the inputs are Tier C.
+**Idle layer** (separate, seeded mulberry32 per cohort, bounded): breathing, blink timing, saccade timing/direction, micro head sway. It runs continuously so reviewers stay subtly alive; CORTEX only sets its gains (saccade amplitude, blink rate). `prefers-reduced-motion` disables it.
+
+**Model-state coupling** (`CouplingOverlay.tsx`): conduits from the central CORTEX view to each reviewer. Intensity = `(0.05 + 0.08·attention·survival)·dim + 0.4·selected + 0.55·fracture`; colour shifts toward the fracture hue with `fracture`; pulses are emitted only when `|Δattention| + |Δwithdrawal| + |Δfracture|` accumulates past 0.035 while the playhead moves. It depicts shared computed state, not a biological signal path.
+
+Mapping gains are Tier D presentation choices; the inputs are Tier C. Nothing is scripted per cohort: a different video yields different reactions.
 
 ## 7. Synthetic EEG proxy — `eeg.ts`
 

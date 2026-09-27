@@ -5,6 +5,7 @@ import { sampleAt } from "@/lib/cortex/simulate";
 import { useLab } from "@/lib/state/store";
 import { Tier } from "./Tier";
 import { ReviewerStage } from "./reviewers/ReviewerStage";
+import { REVIEWER_ACCENT } from "./reviewers/characters";
 import { GlBoundary } from "./GlBoundary";
 
 function Spark({ data, cf, duration, time, fr, W = 88, H = 26 }: { data: Float32Array; cf?: Float32Array; duration: number; time: number; fr?: { start: number; end: number }; W?: number; H?: number }) {
@@ -77,9 +78,10 @@ export function CohortRail() {
                   data-testid={`reviewer-${c.id}`}
                   aria-pressed={on}
                   onClick={() => set({ cohort: on ? null : i })}
-                  className={`block w-full overflow-hidden rounded-md border text-left transition-colors ${on ? "border-line-2 bg-[#17181b]" : "border-line hover:border-line-2"}`}
+                  className={`relative block w-full overflow-hidden rounded-md border text-left transition-colors ${on ? "border-line-2 bg-[#17181b]" : "border-line hover:border-line-2"}`}
                 >
-                  <div ref={slots[i]} className="h-[64px] w-full" aria-hidden />
+                  <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: REVIEWER_ACCENT[c.id], opacity: on ? 1 : 0.7 }} aria-hidden />
+                  <div ref={slots[i]} data-reviewer-anchor={c.id} className="h-[80px] w-full bg-[radial-gradient(ellipse_at_50%_35%,rgba(255,255,255,0.05),transparent_70%)]" aria-hidden />
                   <div className="px-2 pt-1 pb-1.5">
                     <div className="flex items-baseline justify-between gap-1">
                       <span title={c.label} className={`truncate text-[11px] ${on ? "text-fg" : "text-fg-2"}`}>{c.label}</span>
@@ -100,8 +102,9 @@ export function CohortRail() {
           })}
         </ul>
       </div>
-      <div className="mt-1.5 text-[9px] tracking-[0.02em] text-fg-3" title="Head pose, gaze line, rim light and opacity encode each cohort's modeled attention, hazard, orienting, load and survival at the current time. No emotion is recognised or measured.">
+      <div className="mt-1.5 text-[9px] tracking-[0.02em] text-fg-3" title="Head orientation, gaze, eye aperture, blink rate, brow tension, posture and presence encode each cohort's modeled attention, hazard, orienting, load, fracture impact and survival at the current time. Breathing, blinks and small eye movements are a seeded idle layer. No emotion is recognised or measured.">
         Synthetic behavioral expression · CORTEX visualization · not measured emotion
+        <span className="block">Links to the brain · CORTEX state projection (model coupling, not a biological signal)</span>
       </div>
     </div>
   );

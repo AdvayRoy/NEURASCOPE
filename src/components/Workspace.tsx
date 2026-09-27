@@ -9,6 +9,7 @@ import { Metrics } from "./Metrics";
 import { CohortRail } from "./CohortRail";
 import { Inspector } from "./Inspector";
 import { Timeline } from "./Timeline";
+import { CouplingOverlay } from "./reviewers/CouplingOverlay";
 import { EvidenceDrawer } from "./EvidenceDrawer";
 import { AskBar } from "./AskBar";
 import { NetworkLegend } from "./NetworkLegend";
@@ -72,9 +73,9 @@ export function Workspace() {
         </div>
       </header>
 
-      <div className="grid min-h-0 grid-cols-[minmax(0,32fr)_minmax(0,46fr)_minmax(300px,22fr)]">
+      <div className="relative grid min-h-0 grid-cols-[minmax(0,32fr)_minmax(0,46fr)_minmax(300px,22fr)]">
         <VideoPane />
-        <section className="relative min-h-0 border-x border-line">
+        <section data-brain-stage className="relative min-h-0 border-x border-line">
           <div className="absolute inset-0">
             <GlBoundary
               fallback={
@@ -115,6 +116,7 @@ export function Workspace() {
           <CohortRail />
           <Inspector />
         </aside>
+        <CouplingOverlay />
       </div>
 
       <Timeline />

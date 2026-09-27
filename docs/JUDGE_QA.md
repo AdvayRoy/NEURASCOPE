@@ -33,7 +33,7 @@ No. A patch edits the feature timeline (e.g. insert visual change, slow speech, 
 We use BBBD 2026's published effect directions (e.g. distraction raises alpha, reduces ISC). We do not ingest participant-level BBBD recordings. Madsen 2021 contributes summary statistics (gaze-ISC median/IQR).
 
 **What are the faces?**
-Synthetic reviewers: one 3D figure per cohort, driven by that cohort's CORTEX state. They are labelled "Synthetic behavioral expression · CORTEX visualization · not measured emotion". Nothing measures anyone's face or emotion.
+Synthetic reviewers: one stylised 3D character per cohort. A seeded idle layer (breathing, blinks, small eye movements) keeps them alive; every meaningful movement (gaze, head turn, eye aperture, brow tension, posture, presence) is a documented mapping of that cohort's CORTEX state at the playhead. The thin links from the brain are "CORTEX state projection": both ends show the same computed state, not a biological signal. They are labelled "Synthetic behavioral expression · CORTEX visualization · not measured emotion". Nothing measures anyone's face or emotion.
 
 **What is the brain showing?**
 Computational demand from CORTEX mapped onto Desikan–Killiany parcels grouped into seven networks (Yeo 2011, Corbetta & Shulman 2002 for the grouping). It is not measured or predicted biological activation and has no voxel precision.

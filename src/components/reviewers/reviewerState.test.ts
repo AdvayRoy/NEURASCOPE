@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { runCortex } from "@/lib/cortex";
 import { testOntology } from "@/lib/cortex/testOntology";
 import { hazardReference, reviewerState } from "./reviewerState";
+import { reviewerBehavior } from "./reviewerBehavior";
 
 describe("reviewerState", () => {
   const run = runCortex(testOntology(), { population: 4000 });
@@ -22,5 +23,24 @@ describe("reviewerState", () => {
     const most = loss.indexOf(Math.max(...loss));
     const least = loss.indexOf(Math.min(...loss));
     expect(s[most]).toBeGreaterThan(s[least]);
+  });
+});
+
+describe("reviewerBehavior", () => {
+  const run = runCortex(testOntology(), { population: 4000 });
+  const base = hazardReference(run);
+  it("turns further from the content as the cohort's fracture response grows", () => {
+    const s = reviewerState(run, 0, 1, base);
+    const calm = reviewerBehavior({ ...s, withdrawal: 0, fracture: 0 });
+    const hit = reviewerBehavior({ ...s, withdrawal: 0, fracture: 1 });
+    expect(hit.yaw).toBeGreaterThan(calm.yaw);
+    expect(hit.eyeOpen).toBeLessThan(calm.eyeOpen);
+  });
+  it("destabilises gaze and raises blink rate as attention falls", () => {
+    const s = reviewerState(run, 1, 1, base);
+    const hi = reviewerBehavior({ ...s, attention: 1 });
+    const lo = reviewerBehavior({ ...s, attention: 0.1 });
+    expect(lo.wander).toBeGreaterThan(hi.wander);
+    expect(lo.blinkRate).toBeGreaterThan(hi.blinkRate);
   });
 });

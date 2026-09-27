@@ -9,6 +9,8 @@ export interface ReviewerState {
   withdrawal: number;
   /** Cohort-weighted novelty + salience, 0..1. */
   orienting: number;
+  /** Rise in orienting over the last 0.4 s (a salience/novelty onset), 0..1. */
+  orientingOnset: number;
   /** Processing load in excess of cohort capacity (the model's load-penalty term), 0..1. */
   tension: number;
   /** Transient fracture response: window envelope × cohort loss share, 0..1. */
@@ -24,6 +26,7 @@ const smooth = (a: number, b: number, x: number) => {
 };
 
 const WITHDRAWAL_RANGE = Math.log(6);
+const ONSET_WINDOW = 0.4;
 
 /** Median population hazard, the shared reference for every reviewer's withdrawal. */
 export function hazardReference(run: CortexRun): number {
@@ -37,8 +40,9 @@ export function reviewerState(run: CortexRun, c: number, t: number, hazardRef: n
   const spec = COHORTS[c];
   const d = run.drivers;
   const h = sampleAt(run.sim.hazardByCohort[c], hz, t);
-  const nov = sampleAt(d.novelty, hz, t);
-  const sal = sampleAt(d.salience, hz, t);
+  const orientAt = (u: number) =>
+    clamp01((spec.w.novelty * sampleAt(d.novelty, hz, u) + spec.w.salience * sampleAt(d.salience, hz, u)) / Math.max(1e-3, spec.w.novelty + spec.w.salience));
+  const orienting = orientAt(t);
   const load = sampleAt(d.load, hz, t);
   let fracture = 0;
   for (const f of run.fractures) {
@@ -51,7 +55,8 @@ export function reviewerState(run: CortexRun, c: number, t: number, hazardRef: n
     attention: clamp01(sampleAt(run.sim.attentionByCohort[c], hz, t)),
     survival: clamp01(sampleAt(run.sim.retentionByCohort[c], hz, t)),
     withdrawal: clamp01(Math.log(Math.max(1e-6, h / hazardRef)) / WITHDRAWAL_RANGE),
-    orienting: clamp01((spec.w.novelty * nov + spec.w.salience * sal) / Math.max(1e-3, spec.w.novelty + spec.w.salience)),
+    orienting,
+    orientingOnset: clamp01((orienting - orientAt(Math.max(0, t - ONSET_WINDOW))) / 0.15),
     tension: clamp01((load - spec.capacity) / 0.6),
     fracture,
   };
