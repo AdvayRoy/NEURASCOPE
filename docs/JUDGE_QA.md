@@ -3,7 +3,7 @@
 Short, defensible answers. Details and formulas: `docs/SCIENCE_LEDGER.md`.
 
 **Is this real EEG?**
-No. The EEG lane is a synthetic proxy computed from CORTEX state: alpha = 1 − attention, theta = load, ISC mapped onto Madsen 2021's gaze-ISC scale. The waveform is rendered from those envelopes and labelled "SYNTHETIC EEG · ILLUSTRATIVE PROXY". It is Tier C, model-derived.
+No. The EEG lane is a synthetic proxy computed from CORTEX state: alpha = 1 − attention, theta = load, ISC mapped onto Madsen 2021's gaze-ISC scale. The waveform is rendered from those envelopes and labelled "SYNTHETIC EEG · ILLUSTRATIVE". It is Tier C, model-derived.
 
 **Is this an LLM?**
 No. CORTEX is a deterministic, seeded numerical simulation (`src/lib/cortex`). The Ask bar answers from CORTEX state with rules first; an LLM (Anthropic or OpenAI) is optional, only rephrases the structured state, and is told not to invent numbers. Without a key the app is fully functional.

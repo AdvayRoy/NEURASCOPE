@@ -183,7 +183,7 @@ export function Timeline() {
             <text x={16} y={rows.ret[0] + 40} fill="var(--color-fg-3)" opacity={0.7}>{cohort === null ? "ALL VIEWERS" : COHORTS[cohort].label.toUpperCase()}</text>
             <text x={16} y={rows.haz[0] + 18}>HAZARD</text>
             <text x={16} y={rows.eeg[0] + 14}>SYNTHETIC EEG</text>
-            <text x={16} y={rows.eeg[0] + 25} opacity={0.7}>ILLUSTRATIVE PROXY</text>
+            <text x={16} y={rows.eeg[0] + 25} opacity={0.7}>ILLUSTRATIVE</text>
           </g>
           <clipPath id="plot"><rect x={GUTTER} y={0} width={plotW} height={H} /></clipPath>
           <g clipPath="url(#plot)">
