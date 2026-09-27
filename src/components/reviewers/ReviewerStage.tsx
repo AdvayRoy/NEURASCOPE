@@ -79,6 +79,7 @@ function makeActor(rig: ReviewerRig, cohort: number): Actor {
     presence: new Spring(1, 16),
     scale: new Spring(1, 50),
   };
+  const rest = rig.root.position.clone();
   const camera = new THREE.PerspectiveCamera(19, 1, 0.1, 50);
   const focus = new THREE.Vector3(rig.focus.x, FRAME_Y, rig.focus.z);
   const dist = FRAME_HALF / Math.tan(THREE.MathUtils.degToRad(19 / 2));
@@ -132,9 +133,10 @@ function makeActor(rig: ReviewerRig, cohort: number): Actor {
       const brow = S.brow.step(B.browTension, dt);
       const raise = S.raise.step(B.browRaise, dt);
       const presence = S.presence.step(B.presence + (selected ? 0.1 : 0), dt);
-      const scale = S.scale.step(selected ? 1.05 : 1, dt);
+      const scale = S.scale.step(selected ? 1.04 : 1, dt);
 
       rig.root.scale.setScalar(scale);
+      rig.root.position.y = rest.y - (scale - 1) * FRAME_Y;
       pose(rig.chest, lean + 0.012 * breath, REST_YAW + 0.3 * posture);
       pose(rig.neck, 0.35 * headPitch - 0.4 * lean, 0.35 * headYaw);
       pose(rig.head, 0.65 * headPitch, 0.65 * headYaw, roll);
