@@ -1,4 +1,5 @@
 "use client";
+import { GlBoundary } from "./GlBoundary";
 import { COHORTS, AUDIENCE_CONTEXTS, type AudienceContextId } from "@/lib/cortex/params";
 import { rerunContext } from "@/lib/state/pipeline";
 import { useLab, type BrainMode } from "@/lib/state/store";
@@ -75,7 +76,15 @@ export function Workspace() {
         <VideoPane />
         <section className="relative min-h-0 border-x border-line">
           <div className="absolute inset-0">
-            <BrainCanvas />
+            <GlBoundary
+              fallback={
+                <div className="flex h-full items-center justify-center px-8 text-center text-[12px] text-fg-3">
+                  3D view unavailable (WebGL could not start). Timeline, cohorts, fractures and evidence remain fully functional.
+                </div>
+              }
+            >
+              <BrainCanvas />
+            </GlBoundary>
           </div>
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
             <Metrics />
@@ -102,7 +111,7 @@ export function Workspace() {
             <AskBar />
           </div>
         </section>
-        <aside className="flex min-h-0 flex-col">
+        <aside className="flex min-h-0 min-w-0 flex-col">
           <CohortRail />
           <Inspector />
         </aside>

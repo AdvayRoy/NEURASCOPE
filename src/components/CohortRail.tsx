@@ -5,6 +5,7 @@ import { sampleAt } from "@/lib/cortex/simulate";
 import { useLab } from "@/lib/state/store";
 import { Tier } from "./Tier";
 import { ReviewerStage } from "./reviewers/ReviewerStage";
+import { GlBoundary } from "./GlBoundary";
 
 function Spark({ data, cf, duration, time, fr, W = 88, H = 26 }: { data: Float32Array; cf?: Float32Array; duration: number; time: number; fr?: { start: number; end: number }; W?: number; H?: number }) {
   const path = (a: Float32Array, d: number) => {
@@ -58,8 +59,10 @@ export function CohortRail() {
         <span className="num w-9 text-right text-[12px] text-fg">{Math.round(sampleAt(run.sim.retention, hz, time) * 100)}%</span>
       </button>
       <div className="relative">
-        <ReviewerStage slots={slots} />
-        <ul className="grid grid-cols-2 gap-1.5">
+        <GlBoundary>
+          <ReviewerStage slots={slots} />
+        </GlBoundary>
+        <ul className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-1.5">
           {COHORTS.map((c, i) => {
             const on = cohort === i;
             const impact = fr ? fr.cohorts.find((x) => x.cohort === c.id) : null;
