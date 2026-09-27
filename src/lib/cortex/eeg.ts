@@ -1,6 +1,7 @@
 import { GAZE_ISC } from "./params";
 import { hashString, mulberry32 } from "./rng";
 
+/** Synthetic EEG proxy envelopes. Tier C (model-derived from CORTEX attention/load); cited studies set directions and scale only. */
 export interface EegEnvelopes {
   /** Posterior alpha proxy 0..1 (↑ with distraction; BBBD 2026, Ki et al. 2016). Population-level only. */
   alpha: Float32Array;

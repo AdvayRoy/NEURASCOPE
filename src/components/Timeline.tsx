@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { COHORTS } from "@/lib/cortex/params";
 import { eegSynth } from "@/lib/cortex/eeg";
 import { useLab } from "@/lib/state/store";
+import { TIER_LABEL, TIER_LETTER } from "@/lib/evidence/provenance";
 import { Tier } from "./Tier";
 
 const GUTTER = 128;
@@ -215,7 +216,7 @@ export function Timeline() {
               const stagger = ev.kind !== "cut" && prev && x(ev.t) - x(prev.t) < 64 ? 8 : 0;
               return (
               <g key={ev.id}>
-                <title>{`${ev.label} · ${ev.detector} (${ev.tier})`}</title>
+                <title>{`${ev.label} · ${ev.detector} (${TIER_LETTER[ev.tier]} · ${TIER_LABEL[ev.tier]})`}</title>
                 <line x1={x(ev.t)} x2={x(ev.t)} y1={rows.ev[0] + 4} y2={rows.ev[0] + rows.ev[1]} stroke={ev.kind === "cut" ? "rgba(169,173,179,0.35)" : "rgba(143,179,255,0.8)"} />
                 {ev.kind !== "cut" && (
                   <text x={x(ev.t) + 3} y={rows.ev[0] + 8 + stagger} fontSize={8.5} fill="var(--color-fg-2)" fontFamily="var(--font-mono)">
@@ -243,8 +244,8 @@ export function Timeline() {
       </div>
       <div className="absolute right-4 bottom-1.5 flex items-center gap-3 text-[9.5px] text-fg-3">
         {cf && <span className="text-cf">- - counterfactual · {cf.intervention.title} · {cf.deltaPts >= 0 ? "+" : ""}{cf.deltaPts.toFixed(1)} pts at {cf.evalAt.toFixed(1)} s</span>}
-        <span className="flex items-center gap-1">EEG proxy <Tier tier="derived" sources={["bbbd2026", "ki2016", "jensen2002", "madsen2021"]} context="Predicted EEG signature (synthetic)" /></span>
-        <span className="flex items-center gap-1">Survival <Tier tier="heuristic" sources={["neurascopeHeuristics", "tong2020"]} context="Survival / hazard dynamics" /></span>
+        <span className="flex items-center gap-1">EEG proxy <Tier tier="derived" sources={["bbbd2026", "ki2016", "jensen2002", "madsen2021"]} context="Synthetic EEG proxy · model-derived from CORTEX attention and load, never measured EEG" /></span>
+        <span className="flex items-center gap-1">Survival <Tier tier="derived" sources={["cohen2017", "tong2020", "neurascopeHeuristics"]} context="Survival / hazard · CORTEX viewer-level simulation (hazard link parameters are Tier D heuristics)" /></span>
       </div>
     </section>
   );

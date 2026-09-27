@@ -25,7 +25,7 @@ export const SOURCES: Record<string, EvidenceSource> = {
     year: 2026,
     venue: "Scientific Data",
     url: "https://www.nature.com/articles/s41597-026-07215-1",
-    tier: "empirical",
+    tier: "literature",
     experiment:
       "178 participants, five experiments, ~110 h of EEG, EOG, ECG, respiration, pupil, gaze, saccades, blinks and head motion, time-aligned to short educational videos; attentive vs distracted viewing.",
     measured: "EEG band power, gaze position, saccades, blinks, pupil size, physiological signals.",
@@ -249,7 +249,7 @@ export const SOURCES: Record<string, EvidenceSource> = {
     measured: "—",
     finding: "—",
     usage:
-      "Cohort mixtures, sensitivity weights, hook-window hazard, capacity thresholds, payoff-distance penalty and transcript cue lexicons. All are isolated in one file and labeled D wherever they influence a displayed number.",
+      "Cohort mixtures, sensitivity weights, hook-window hazard, capacity thresholds, payoff-distance penalty and transcript cue lexicons. All are isolated in one file and listed as a Tier D calibration source wherever they influence a displayed number; values computed by CORTEX from them are Tier C.",
     limitation: "Not fitted to retention data. Treat absolute retention levels as illustrative; relative changes between conditions are the intended output.",
   },
 };

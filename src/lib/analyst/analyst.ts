@@ -55,7 +55,7 @@ export function deterministicAnswer(q: string, run: CortexRun, ctx: { fractureId
   if (/evidence|source|citation|study|why should i (trust|believe)|proof/.test(query)) {
     const ids = fr ? fr.sources : ["ki2016", "madsen2021", "cohen2017", "bbbd2026"];
     return ans(
-      `This ${fr ? "fracture" : "analysis"} rests on ${ids.map((i) => SOURCES[i]?.short).filter(Boolean).join(", ")}. Survival dynamics, cohort weights and cue lexicons are Tier D heuristics and are labeled wherever they drive a number.`,
+      `This ${fr ? "fracture" : "analysis"} rests on ${ids.map((i) => SOURCES[i]?.short).filter(Boolean).join(", ")}. Those studies calibrate the mechanisms; the displayed numbers are CORTEX outputs (Tier C, model-derived), not measurements. Survival-link parameters, cohort weights and cue lexicons are Tier D heuristics. No participant-level BBBD recordings are used.`,
       [{ kind: "open-evidence", sourceIds: ids, context: fr ? `Fracture ${fr.id}` : "Analysis" }],
     );
   }
@@ -91,7 +91,7 @@ export function deterministicAnswer(q: string, run: CortexRun, ctx: { fractureId
   }
   if (/eeg|neural|brain|alpha|theta/.test(query)) {
     return ans(
-      `The EEG strip is a synthetic proxy: alpha rises as modeled attention falls (BBBD 2026; Ki et al. 2016), theta rises with processing load (Jensen & Tesche 2002), and the reliability trace maps attention onto the gaze-ISC scale (Madsen et al. 2021). At ${s1(ctx.time)} the reliability proxy is ${sampleAt(run.eeg.isc, run.sim.hz, ctx.time).toFixed(2)}. Nothing here was measured from viewers.`,
+      `The EEG strip is a synthetic proxy: alpha rises as modeled attention falls (BBBD 2026; Ki et al. 2016), theta rises with processing load (Jensen & Tesche 2002), and the reliability trace maps attention onto the gaze-ISC scale (Madsen et al. 2021). At ${s1(ctx.time)} the reliability proxy is ${sampleAt(run.eeg.isc, run.sim.hz, ctx.time).toFixed(2)}. It is model-derived (Tier C); nothing here was measured from viewers.`,
       [{ kind: "open-evidence", sourceIds: ["bbbd2026", "ki2016", "jensen2002", "madsen2021"], context: "Synthetic EEG proxy" }],
     );
   }
