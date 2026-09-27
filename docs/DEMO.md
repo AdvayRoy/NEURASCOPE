@@ -19,7 +19,7 @@ pnpm dev            # http://localhost:3000
 Notes:
 - The fixture is hand-authored in Oriane wire shape. **It is not Oriane output.** It carries a transcript only; add the matching clip ("Run on development fixture + this file") to get measured visual/audio signals.
 - A URL-only run gets Oriane transcript chunks + keyframes but no decoded pixels; visual terms sit at neutral priors (shown under "Unavailable"). Best demo: **URL + the same MP4** — Oriane semantics, locally measured visuals.
-- No live Oriane key has been tested yet. Rehearse the fixture path as the primary path.
+- The live path is verified against the real Oriane API. Rehearse **URL + matching MP4** as the primary path; keep the MP4 handy as the fallback.
 - Before the demo: open the app once so the last analysis is saved (refresh restores it).
 
 ## Sequence
@@ -44,6 +44,9 @@ Each cohort is shown as a live 3D synthetic reviewer, labelled "Synthetic behavi
 **1:20 — Fracture.** Click the first fracture marker on the timeline, or press `1`.
 > "A fracture is a window where hazard rises well above its recent baseline and costs real survival points, and CORTEX can name the driver." Point at Mechanism, Observed in source (static seconds, words since last cut, new concepts, open loop) and per-cohort impact. Say: "At the fracture timestamp all four reviewers respond from their own cohort state, in sync with the brain — whoever loses most turns away; low-impact cohorts stay oriented. Nothing is scripted per character."
 
+**1:35 — Corpus evidence · Oriane.** Below "Observed in source", the **Corpus evidence · Oriane** block fills in (one request per fracture, made when you select it).
+> "CORTEX predicts the failure; Oriane grounds it. From this fracture we build a fingerprint — the transcript around it, the frame at the peak, the drivers — and retrieve real published videos that look or sound like this moment, then compare structure at the same relative point: speech density, keyframe cadence. These are descriptive reference points, not retention ground truth, and they never feed the model."
+
 **1:45 — Evidence.** Click any tier chip in the Mechanism list → EvidenceDrawer.
 > "Here's the study, what it measured, what we use from it, and its limitation. We use BBBD effect directions and Madsen's gaze-ISC summary statistics; we don't ingest participant recordings."
 
@@ -65,6 +68,8 @@ Each cohort is shown as a live 3D synthetic reviewer, labelled "Synthetic behavi
 |---|---|---|
 | No `ORIANE_API_KEY` | `/api/status` reports Oriane not configured; URL resolve returns an error | Use **Run on development fixture** (optionally + MP4). Say "labelled development fixture, not Oriane output." |
 | Oriane `NOT_INDEXED` | Loading screen shows the error + **Back** (never falls back to fixture) | Back → upload the MP4 (optionally keep the URL: with a file attached, a failed resolve is skipped and the run continues `local-only`). |
+| Oriane down / 429 for a URL that already resolved live in this browser | The earlier genuine `oriane-live` result is reused; the acquire step says "reusing this URL's earlier live Oriane result" | Say so: "cached from the earlier live resolution". Run the demo once beforehand so this cache exists. |
+| Corpus evidence unavailable | The block shows an honest unavailable line (no key, provider error, rate limit with retry countdown) | Narrate mechanism + source evidence; the rest of the workflow is unaffected. |
 | WebGL unavailable | The brain and reviewer canvases are wrapped in an error boundary: the brain area shows "3D view unavailable" and reviewer tiles keep their numbers; everything else works | Enable hardware acceleration in Chrome (check `chrome://gpu`) before the demo; if it still fails, narrate from Timeline, CohortRail, Inspector and Metrics, which are DOM/SVG. |
 | Network down | Fixture, upload, CORTEX (Web Worker) and deterministic analyst are all local | Use fixture or MP4. Refresh-restore works offline (saved ontology + media in IndexedDB). Oriane and LLM calls fail. |
 | Refresh | `loadRun()` restores the saved input, media blob, ontology and audience, and reruns CORTEX without re-calling Oriane | — |

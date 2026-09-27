@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { COHORTS } from "@/lib/cortex/params";
 import { useLab } from "@/lib/state/store";
 import { bindRig, pose, REVIEWER_ASSET, setMorph, type ReviewerRig } from "./rig";
@@ -190,14 +191,14 @@ function Studio() {
 function Cast({ slots }: { slots: RefObject<HTMLDivElement | null>[] }) {
   const gltf = useLoader(GLTFLoader, REVIEWER_ASSET, (l) => l.setMeshoptDecoder(MeshoptDecoder));
   const { gl, scene } = useThree();
-  const actors = useMemo(
-    () =>
-      COHORTS.map((c, i) => {
-        const node = gltf.scene.getObjectByName(`reviewer_${c.id}`);
-        return node ? makeActor(bindRig(node), i) : null;
-      }),
-    [gltf],
-  );
+  // Work on a per-mount clone: the loader result is cached across mounts and must stay intact.
+  const actors = useMemo(() => {
+    const cast = cloneSkinned(gltf.scene);
+    return COHORTS.map((c, i) => {
+      const node = cast.getObjectByName(`reviewer_${c.id}`);
+      return node ? makeActor(bindRig(node), i) : null;
+    });
+  }, [gltf]);
   useEffect(() => {
     const group = new THREE.Group();
     actors.forEach((a) => a && group.add(a.rig.root));

@@ -28,8 +28,8 @@ CORTEX runs in a Web Worker (`cortex.worker.ts`, `client.ts`); orchestration in 
 | `src/components/` | `InputScreen`, `LoadingScreen`, `Workspace`, `VideoPane`, `Timeline`, `Metrics`, `CohortRail`, `Inspector`, `EvidenceDrawer`, `AskBar`, `NetworkLegend`, `Tier`, `useKeyboard` |
 | `src/components/brain/` | `BrainCanvas` (React Three Fiber; CORTEX / NETWORKS / NEURAL modes), `AudienceField`, brain mesh loader/material |
 | `src/lib/cortex/` | Model: `params`, `features`, `population`, `simulate`, `fractures`, `interventions`, `networks`, `eeg`, `rng`, `index` |
-| `src/lib/oriane/` | Oriane client, adapter (`resolveLive`, `resolveFixture`), URL parser, normalizer, comparables, dev fixture |
-| `src/lib/media/extract.ts` | In-browser frame difference, luminance, spatial entropy, audio RMS, cuts |
+| `src/lib/oriane/` | Oriane client, adapter (`resolveLive`, `resolveFixture`), URL parser, normalizer, `fingerprint.ts` (fracture → `FractureFingerprint`), `comparables.ts` (fracture-conditioned corpus retrieval + benchmarks), dev fixture |
+| `src/lib/media/extract.ts`, `frame.ts` | In-browser frame difference, luminance, spatial entropy, audio RMS, cuts; single JPEG frame capture at a fracture peak |
 | `src/lib/evidence/` | `sources.ts` (citations), `provenance.ts` (tiers) |
 | `src/lib/state/` | Zustand store, pipeline, persistence (localStorage + IndexedDB) |
 | `src/lib/server/rateLimit.ts` | Per-IP token bucket, bounded TTL cache |
@@ -47,16 +47,25 @@ Every run is badged with its `PerceptionSource`:
 | `dev-fixture` | `GET /api/oriane/fixture` | Hand-authored record in Oriane wire shape. **Not Oriane output.** Transcript only; metrics zeroed. |
 | `local-only` | Uploaded file | Measured visual/audio signals; no transcript (Oriane has no upload endpoint). |
 
-A local file can be combined with a URL or the fixture to add measured signals. Missing modalities are listed as "Unavailable" and held at neutral priors. No live Oriane key has been tested yet.
+A local file can be combined with a URL or the fixture to add measured signals. Missing modalities are listed as "Unavailable" and held at neutral priors. The live path is verified against the real API (`POST /rest/contents/search` answers `206` with the record; `transcript.includesFuzzy`, `visualSimilarity` with an `/rest/assets` upload and per-frame scores all confirmed).
+
+If Oriane is unreachable for a URL that was previously resolved live in this browser, the earlier genuine `oriane-live` result is reused (the loading step says so). Fallback order: live URL + MP4 → that cached live result + MP4 → local MP4 → clearly labelled fixture. Nothing is ever silently relabelled.
+
+## Corpus evidence (fracture → Oriane)
+
+Selecting an Attention Fracture builds a `FractureFingerprint` (window, top CORTEX drivers, ±3 s transcript, extracted terms, caption/hashtags/platform, nearest live keyframe or a 320 px local frame, structural observations) and makes **one** `POST /api/oriane/comparables`. The server runs at most one visual-similarity search (live keyframe URL, or the local frame uploaded to `/rest/assets`) and one fuzzy-transcript search on the same platform/format, merges and dedupes to ≤6 published comparables (the source video excluded), and computes ≤2 benchmarks (speech density and indexed keyframe cadence at the same relative point) only when ≥3 comparables are measurable. Results are cached per fingerprint and per run; nothing is fetched while the playhead moves. Views/engagement are shown only as "distribution/performance context · not retention ground truth" and never enter CORTEX.
 
 ## Quick start
 
-Node 24, pnpm.
+Node ≥22 (developed on 24), pnpm.
 
 ```
 pnpm install
 pnpm dev          # http://localhost:3000
+pnpm build && pnpm start   # production; honours PORT
 ```
+
+Secrets are environment variables only (`.env.example`); `ORIANE_API_KEY` is read server-side and never shipped to the client. A minimal `.replit` is included for import.
 
 Runs fully without any keys: **Run on development fixture**, or upload an MP4.
 

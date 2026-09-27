@@ -25,6 +25,21 @@ export interface OrianeVisualSimilarityValue {
   maxScore?: number;
 }
 
+export interface OrianeTextValues {
+  values: string[];
+  operator?: "and" | "or";
+}
+
+/** Text field filter (transcript / caption). `includesFuzzy` is confirmed against the live API. */
+export interface OrianeTextFilter {
+  exactMatch?: OrianeTextValues;
+  includesExactly?: OrianeTextValues;
+  includesFuzzy?: OrianeTextValues;
+  excludesExactly?: OrianeTextValues;
+  excludesFuzzy?: OrianeTextValues;
+  operator?: "and" | "or";
+}
+
 export interface OrianeContentFilters {
   id?: OrianeIncludes<string>;
   platform?: OrianeIncludes<OrianePlatform>;
@@ -32,10 +47,9 @@ export interface OrianeContentFilters {
   format?: OrianeIncludes<OrianeFormat>;
   profileHandle?: OrianeIncludes<string>;
   hashtags?: OrianeIncludes<string>;
-  transcript?: {
-    exactMatch?: { values: string[]; operator?: "and" | "or" };
-    includesExactly?: { values: string[]; operator?: "and" | "or" };
-  };
+  transcriptLanguage?: OrianeIncludes<string>;
+  transcript?: OrianeTextFilter;
+  caption?: OrianeTextFilter;
   visualSimilarity?: {
     includes?: { values: OrianeVisualSimilarityValue[]; operator?: "and" | "or" };
   };

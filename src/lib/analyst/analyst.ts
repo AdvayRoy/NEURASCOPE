@@ -2,6 +2,7 @@ import type { Counterfactual, CortexRun } from "../cortex";
 import { COHORTS } from "../cortex/params";
 import { sampleAt } from "../cortex/simulate";
 import type { Fracture } from "../cortex/fractures";
+import type { CorpusResult } from "../oriane/comparables";
 import { SOURCES } from "../evidence/sources";
 
 export type AnalystAction =
@@ -27,8 +28,19 @@ export function describeFracture(fr: Fracture): string {
   return `The model predicts elevated disengagement at ${s1(fr.start)}–${s1(fr.end)} (hazard +${fr.hazardExcess.toFixed(2)}/s over baseline, ${fr.lossPts.toFixed(1)} survival pts in excess). Mechanism: ${drivers}. ${cohort.label}s are most affected, losing ${pct(top.lossShare)} of those still watching.${payoff}`;
 }
 
+/** Concise, descriptive-only summary of Oriane corpus evidence for the selected fracture (never a CORTEX input). */
+export function corpusSummary(ev: CorpusResult | "pending" | undefined) {
+  if (!ev || ev === "pending" || !ev.available) return null;
+  return {
+    source: "Oriane published-content corpus · descriptive context · not retention ground truth",
+    retrievedBy: [ev.retrieval.visual, ev.retrieval.terms.length ? `transcript terms: ${ev.retrieval.terms.join(", ")}` : null].filter(Boolean),
+    comparables: ev.items.map((i) => ({ handle: i.handle, duration: i.duration, matchedBy: i.matchedBy, excerpt: i.excerpt })),
+    benchmarks: ev.benchmarks.map((b) => ({ label: b.label, unit: b.unit, source: b.source, corpusMedian: b.corpusMedian, n: b.n })),
+  };
+}
+
 /** Compact structured context for an optional LLM analyst. */
-export function analystContext(run: CortexRun, fractureId: string | null, cohort: number | null, t: number) {
+export function analystContext(run: CortexRun, fractureId: string | null, cohort: number | null, t: number, corpus?: CorpusResult | "pending") {
   const fr = run.fractures.find((f) => f.id === fractureId);
   return {
     duration: run.timeline.duration,
@@ -38,6 +50,7 @@ export function analystContext(run: CortexRun, fractureId: string | null, cohort
     retentionByCohortEnd: Object.fromEntries(COHORTS.map((c, i) => [c.label, run.sim.retentionByCohort[i][run.sim.n - 1]])),
     fractures: run.fractures.map((f) => ({ id: f.id, start: f.start, end: f.end, lossPts: f.lossPts, drivers: f.drivers.map((d) => ({ label: d.label, direction: d.direction, tier: d.tier })), mostAffected: f.cohorts.slice(0, 2), observed: f.observed })),
     selected: fr?.id ?? null,
+    corpusEvidence: fr ? corpusSummary(corpus) : null,
     interventions: run.interventions.map((i) => ({ id: i.id, fracture: i.fractureId, title: i.title, instruction: i.instruction })),
     availability: run.timeline.availability,
     sources: Object.values(SOURCES).map((s) => ({ id: s.id, short: s.short, tier: s.tier, usage: s.usage })),

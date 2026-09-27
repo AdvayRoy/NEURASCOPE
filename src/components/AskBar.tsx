@@ -53,7 +53,7 @@ export function AskBar() {
       const r = await fetch("/api/analyst", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question, context: analystContext(s.run, s.fractureId, s.cohort, s.time) }),
+        body: JSON.stringify({ question, context: analystContext(s.run, s.fractureId, s.cohort, s.time, s.fractureId ? s.corpus[s.fractureId] : undefined) }),
       });
       if (r.ok) {
         const j = (await r.json()) as { answer: string | null; provider: "anthropic" | "openai" | null };

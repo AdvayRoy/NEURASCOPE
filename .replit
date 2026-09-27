@@ -1,0 +1,7 @@
+# Replit import config. Secrets (ORIANE_API_KEY, optional LLM keys) go in Replit Secrets, never in the repo.
+run = "pnpm start"
+entrypoint = "src/app/page.tsx"
+
+[deployment]
+build = ["sh", "-c", "corepack enable && pnpm install --frozen-lockfile && pnpm build"]
+run = ["sh", "-c", "pnpm start"]

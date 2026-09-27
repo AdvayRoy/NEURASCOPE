@@ -5,6 +5,7 @@ import { sampleAt } from "@/lib/cortex/simulate";
 import { simulatePatch } from "@/lib/state/pipeline";
 import { useLab } from "@/lib/state/store";
 import type { EvidenceTier } from "@/lib/evidence/provenance";
+import { CorpusEvidenceSection } from "./CorpusEvidence";
 import { Tier } from "./Tier";
 
 function FractureView() {
@@ -65,6 +66,8 @@ function FractureView() {
         </dl>
         {o.transcript && <p className="mt-2 border-l border-line-2 pl-2 text-[11.5px] italic leading-snug text-fg-3">“{o.transcript}”</p>}
       </div>
+
+      <CorpusEvidenceSection fractureId={fr.id} />
 
       <div>
         <div className="label mb-2 flex items-center gap-1.5">Interventions · counterfactual reruns <Tier tier="derived" sources={["neurascopeHeuristics"]} context="Counterfactual deltas · CORTEX rerun on an edited feature timeline" /></div>

@@ -1,9 +1,12 @@
 "use client";
 import { cortexClient } from "../cortex/client";
 import { extractSignals } from "../media/extract";
+import { captureFrame } from "../media/frame";
+import type { CorpusResult } from "../oriane/comparables";
+import { buildFractureFingerprint } from "../oriane/fingerprint";
 import { localOnlyOntology } from "../oriane/normalize";
 import type { VideoOntology } from "../ontology";
-import { saveContext, saveRun } from "./persist";
+import { loadRun, saveContext, saveRun } from "./persist";
 import { useLab, type PipelineStep } from "./store";
 
 export interface RunInput {
@@ -36,10 +39,17 @@ async function json<T>(res: Response): Promise<T> {
   return j;
 }
 
+/** Earlier genuine `oriane-live` result for the same URL, saved by a previous successful run; never a fixture. */
+async function cachedLiveAnalysis(url: string): Promise<VideoOntology | null> {
+  const prev = await loadRun();
+  if (!prev || prev.saved.url !== url || prev.ontology.source !== "oriane-live") return null;
+  return { ...prev.ontology, signals: null };
+}
+
 export async function runPipeline(input: RunInput) {
   const gen = ++generation;
   const lab = useLab.getState();
-  lab.set({ phase: "loading", steps: STEPS.map((s) => ({ ...s })), error: null, run: null, counterfactuals: {}, activeCf: null, fractureId: null, time: 0 });
+  lab.set({ phase: "loading", steps: STEPS.map((s) => ({ ...s })), error: null, run: null, counterfactuals: {}, activeCf: null, fractureId: null, time: 0, corpus: {} });
   try {
     step("acquire", "active");
     let ontology: VideoOntology | null = null;
@@ -56,8 +66,14 @@ export async function runPipeline(input: RunInput) {
         step("acquire", "done", `Oriane · ${ontology.transcript.length} transcript chunks · ${ontology.keyframes.length} keyframes`);
       } else {
         const err = ((await res.json()) as { error: { message: string } }).error.message;
-        if (!input.file) throw new Error(err);
-        step("acquire", "skipped", err);
+        const cached = await cachedLiveAnalysis(input.url);
+        if (cached) {
+          ontology = cached;
+          step("acquire", "done", `Oriane unavailable (${err}) · reusing this URL's earlier live Oriane result`);
+        } else {
+          if (!input.file) throw new Error(err);
+          step("acquire", "skipped", err);
+        }
       }
     } else {
       step("acquire", "skipped", "No published URL · Oriane perception unavailable for local files");
@@ -104,8 +120,46 @@ export async function rerunContext() {
   const gen = ++generation;
   const run = await cortexClient.run(ontology, { context });
   if (gen !== generation || useLab.getState().ontology !== ontology) return;
-  set({ run, counterfactuals: {}, activeCf: null, fractureId: null });
+  set({ run, counterfactuals: {}, activeCf: null, fractureId: null, corpus: {} });
   saveContext(context);
+}
+
+/**
+ * Fracture-conditioned Oriane corpus retrieval. Runs once per fracture per run, on explicit fracture selection —
+ * never as the playhead moves. Results (including failures) are kept on the run so re-selecting costs nothing.
+ */
+export async function loadCorpusEvidence(fractureId: string) {
+  const { run, ontology, mediaUrl, corpus, set } = useLab.getState();
+  const fr = run?.fractures.find((f) => f.id === fractureId);
+  if (!run || !ontology || !fr || corpus[fractureId]) return;
+  set({ corpus: { ...corpus, [fractureId]: "pending" } });
+  const put = (r: CorpusResult) => {
+    const s = useLab.getState();
+    if (s.run !== run) return;
+    s.set({ corpus: { ...s.corpus, [fractureId]: r } });
+  };
+  try {
+    const frame = mediaUrl ? await captureFrame(mediaUrl, fr.peak) : null;
+    const fingerprint = buildFractureFingerprint(fr, ontology, frame);
+    const res = await fetch("/api/oriane/comparables", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ fingerprint }) });
+    if (res.status === 429) {
+      const wait = Math.min(120, Number(res.headers.get("retry-after") ?? 15));
+      put({ available: false, fractureId, reason: `Corpus retrieval is rate-limited. Retrying in ${wait} s.` });
+      setTimeout(() => {
+        const s = useLab.getState();
+        if (s.run !== run) return;
+        const { [fractureId]: _drop, ...rest } = s.corpus;
+        void _drop;
+        s.set({ corpus: rest });
+        if (s.fractureId === fractureId) void loadCorpusEvidence(fractureId);
+      }, wait * 1000);
+      return;
+    }
+    const j = (await res.json()) as CorpusResult | { error: { message: string } };
+    put("error" in j ? { available: false, fractureId, reason: j.error.message } : j);
+  } catch {
+    put({ available: false, fractureId, reason: "Corpus retrieval failed. CORTEX results are unaffected." });
+  }
 }
 
 export async function simulatePatch(interventionId: string) {

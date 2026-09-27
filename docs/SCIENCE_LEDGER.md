@@ -20,6 +20,7 @@ All constants live in `src/lib/cortex/params.ts`. Source ids refer to `src/lib/e
 - Participant-level BBBD recordings are **not** ingested. The build uses BBBD 2026 published effect directions (distraction → alpha ↑) and Madsen 2021 gaze-ISC summary statistics (median/IQR).
 - No model is fitted to retention data. Absolute retention levels are illustrative; relative differences between conditions (cohorts, counterfactuals) are the intended output.
 - Nothing here measures emotion, EEG, dopamine, or biological activation.
+- Oriane platform metrics (views, likes, shares, comments, engagement rate, followers) are **never** CORTEX inputs; they appear only as descriptive corpus context. Oriane observes/retrieves; CORTEX predicts; platform analytics would later validate.
 
 ## Pipeline
 
@@ -255,7 +256,18 @@ Counterfactual outputs are Tier C model predictions, not guarantees.
 ## 10. Other components
 
 - `newConcepts` / lexical features ignore language; the lexicons are English (D).
-- `/api/analyst` (optional LLM) receives only the structured CORTEX state (`analystContext`) and is instructed not to invent numbers; the deterministic analyst (`deterministicAnswer`) answers from CORTEX state with no LLM.
+- `/api/analyst` (optional LLM) receives only the structured CORTEX state (`analystContext`, plus a descriptive corpus-evidence summary when a fracture with loaded corpus evidence is selected) and is instructed not to invent numbers; the deterministic analyst (`deterministicAnswer`) answers from CORTEX state with no LLM.
+
+## 11. Corpus evidence — `oriane/fingerprint.ts`, `oriane/comparables.ts` (retrieval, not model)
+
+Runs downstream of fracture detection and never feeds back into it.
+
+- `FractureFingerprint`: fracture window (start/end/peak), top 3 drivers, transcript within ±`FINGERPRINT_WINDOW_PAD` = 3 s (≤600 chars), ≤6 content terms (frequency-ranked after stop-word removal; hashtags ×1.5, caption ×0.5), caption/hashtags/platform, nearest live Oriane keyframe ≤4 s before the peak (live sources only) or a 320 px local JPEG frame captured at the peak, and the fracture's existing structural observations. Speech density = words in window / window length; keyframe cadence = Oriane-indexed keyframes in window per 10 s (live only — locally detected cuts are a different measure and are not mixed in).
+- Retrieval: ≤1 visual-similarity search (keyframe URL or uploaded frame asset), ≤1 fuzzy-transcript search (`transcript.includesFuzzy`, `or`), both constrained to the source platform and `video` format, run in parallel. Results merged, deduplicated, source video excluded, ranked (visual = mean matched-frame similarity; transcript = provider order), ≤6 items.
+- Comparable measurement (`measureAtRelativePosition`): the same ±3 s window at the same *relative* position (fracture start / duration) inside each comparable, from its transcript chunks and frames.
+- Benchmarks (`buildBenchmarks`): robust medians, shipped only when ≥3 comparables are measurable; at most two (speech density, keyframe cadence; duration only as a fallback). Reference points, not effect estimates — no significance is claimed.
+- Views / engagement rate: medians shown as "distribution/performance context · not retention ground truth" (Tier: descriptive platform data, not a model quantity).
+- Limitations: fuzzy transcript matching is lexical, not semantic; visual similarity is the provider's score; the retrieved set is the provider's top hits, not a random sample of the platform; comparables are not matched on topic beyond terms/visuals.
 
 ## Heuristics (Tier D)
 

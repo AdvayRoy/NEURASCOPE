@@ -4,6 +4,7 @@ import type { Counterfactual, CortexRun } from "../cortex";
 import type { AudienceContextId } from "../cortex/params";
 import type { NetworkId } from "../cortex/networks";
 import type { VideoOntology } from "../ontology";
+import type { CorpusResult } from "../oriane/comparables";
 import { clearRun } from "./persist";
 
 export type Phase = "input" | "loading" | "workspace";
@@ -39,6 +40,8 @@ interface State {
   activeCf: string | null;
   cfPending: string | null;
   evidence: EvidenceFocus | null;
+  /** Oriane corpus evidence per fracture id for the current run; `"pending"` while a request is in flight. */
+  corpus: Record<string, CorpusResult | "pending">;
   /** Monotonic counter bumped when the time is changed by a user seek (not playback). */
   seekNonce: number;
   hoverRegion: { name: string; networks: NetworkId[] } | null;
@@ -66,6 +69,7 @@ const initial = {
   activeCf: null,
   cfPending: null,
   evidence: null,
+  corpus: {} as Record<string, CorpusResult | "pending">,
   seekNonce: 0,
   hoverRegion: null as { name: string; networks: NetworkId[] } | null,
 };
