@@ -8,7 +8,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 GLB = os.path.join(HERE, "..", "..", "..", "public", "models", "reviewers.glb")
 IDS = ["cold", "intent", "visual", "enthusiast"]
 BONES = {"Chest", "Neck", "Head", "Eye_L", "Eye_R"}
-MORPHS = {"blink_L", "blink_R", "wide", "browDown", "browUp", "mouthOpen"}
+MORPHS = {"blink_L", "blink_R", "wide", "browDown", "browUp", "mouthOpen", "smile"}
 
 data = open(GLB, "rb").read()
 size = len(data)

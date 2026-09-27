@@ -116,6 +116,7 @@ if MODE in ("views", "all"):
         render(os.path.join(OUT, f"{cid}_34.png"), 512, 512)
 
 TILE_W, TILE_H, HEAD_PX = 110, 124, 70
+STRIP_SMILE = 1.0
 
 
 def head_extent(cid):
@@ -143,6 +144,7 @@ if MODE in ("strip", "all"):
             f.write(f"{cid} head_px={(t - c) / frame_h * TILE_H:.1f}\n")
     for cid in IDS:
         show(cid)
+        set_keys(cid, {"smile": STRIP_SMILE})
         aim(25, target, frame_h, dist=4.0)
         render(os.path.join(OUT, f"tile_{cid}.png"), TILE_W, TILE_H)
         render(os.path.join(OUT, f"tile2x_{cid}.png"), TILE_W * 2, TILE_H * 2)
@@ -150,7 +152,7 @@ if MODE in ("strip", "all"):
 if MODE in ("rig", "all"):
     states = [("neutral", {}, (0, 0)), ("blink", {"blink_L": 1, "blink_R": 1}, (0, 0)), ("half blink", {"blink_L": 0.5, "blink_R": 0.5}, (0, 0)),
               ("wide", {"wide": 1}, (0, 0)), ("browDown", {"browDown": 1}, (0, 0)), ("browUp", {"browUp": 1}, (0, 0)),
-              ("mouthOpen", {"mouthOpen": 1}, (0, 0)), ("look left", {}, (25, 0)), ("look right", {}, (-25, 0)), ("look up", {}, (0, 18)),
+              ("mouthOpen", {"mouthOpen": 1}, (0, 0)), ("smile", {"smile": 1}, (0, 0)), ("look left", {}, (25, 0)), ("look right", {}, (-25, 0)), ("look up", {}, (0, 18)),
               ("look down", {"browDown": 0.4}, (0, -15))]
     for cid in IDS:
         show(cid)

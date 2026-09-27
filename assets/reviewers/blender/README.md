@@ -9,5 +9,5 @@ python3 assets/reviewers/blender/compose.py <out> <reference.png>  # views_sheet
 
 Contract: four top-level nodes `reviewer_{cold,intent,visual,enthusiast}` at the origin, Y up, facing +Z,
 shoulders at y=0, head top ~1.0. Bones `Chest > Neck > Head > Eye_L/Eye_R` (eye pivots at eyeball centres;
-hair/headwear/glasses/earrings weighted 100% to `Head`). Shape keys `blink_L blink_R wide browDown browUp mouthOpen`
+hair/headwear/glasses/earrings weighted 100% to `Head`). Shape keys `blink_L blink_R wide browDown browUp mouthOpen smile`
 live on the `<id>_face` mesh (lids, brows, mouth are part of it). Matte materials, metalness 0.
