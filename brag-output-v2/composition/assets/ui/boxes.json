@@ -1,0 +1,46 @@
+{
+  "ask": {
+    "x": 645.484375,
+    "y": 570.5,
+    "width": 413.5,
+    "height": 18.75
+  },
+  "answer1": {
+    "x": 511.984375,
+    "y": 400,
+    "width": 560,
+    "height": 155.5
+  },
+  "answer1Text": "The model predicts elevated disengagement at 4.4 s–5.4 s (hazard +0.07/s over baseline, 3.0 survival pts in excess). Mechanism: processing demand rising, unresolved payoff rising. Visual-First Viewers are most affected, losing 29% of those still watching.",
+  "focusBtn": {
+    "x": 528.984375,
+    "y": 512,
+    "width": 64.234375,
+    "height": 26.5
+  },
+  "chip": {
+    "x": 854.921875,
+    "y": 602.25,
+    "width": 165,
+    "height": 15.75
+  },
+  "answer2": {
+    "x": 511.984375,
+    "y": 420,
+    "width": 560,
+    "height": 135.5
+  },
+  "answer2Text": "Start with F2 at 4.4 s: it costs the most survival (3.0 pts). Simulate “Split the dense line” to see the predicted change.",
+  "simulate": {
+    "x": 601.21875,
+    "y": 512,
+    "width": 161.5625,
+    "height": 26.5
+  },
+  "briefToggle": {
+    "x": 829.375,
+    "y": 9,
+    "width": 140.40625,
+    "height": 25
+  }
+}
